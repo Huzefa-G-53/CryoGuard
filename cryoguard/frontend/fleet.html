@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryoGuard AI · Depot Alpha Cold-Storage Fleet Telemetry Matrix</title>
+
+  <!-- Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            purpleAccent: '#7c3aed',
+            purpleLight: '#ede9fe',
+            purpleSubtle: '#f5f3ff',
+            blueAccent: '#0284c7',
+            blueLight: '#e0f2fe',
+            blueSubtle: '#f0f9ff',
+            slateDark: '#0f172a',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      cursor: inherit;
+    }
+    html, body {
+      cursor: default !important;
+      scroll-behavior: smooth;
+    }
+    button, [role="button"], input[type="range"], .clickable, .btn-lift, [onclick], kbd, select, a {
+      cursor: pointer !important;
+    }
+    input[type="text"], input[type="number"], textarea {
+      cursor: text !important;
+    }
+
+    body {
+      background-color: #f8faff;
+      color: #0f172a;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.page-exit {
+      opacity: 0;
+      transform: translateY(-3px);
+    }
+
+    main {
+      animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      will-change: opacity, transform;
+    }
+
+    @keyframes pageFadeIn {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Ambient Aurora Glow */
+    .aurora-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .aurora-orb-1 {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      top: -180px;
+      left: 10%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(196, 181, 253, 0.40) 0%, rgba(237, 233, 254, 0.18) 50%, transparent 75%);
+      filter: blur(85px);
+      animation: floatOrb 22s ease-in-out infinite alternate;
+    }
+    .aurora-orb-2 {
+      position: absolute;
+      width: 650px;
+      height: 650px;
+      top: 60px;
+      right: 8%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(186, 230, 253, 0.45) 0%, rgba(224, 242, 254, 0.16) 50%, transparent 75%);
+      filter: blur(85px);
+      animation: floatOrb 26s ease-in-out infinite alternate-reverse;
+    }
+    .aurora-orb-3 {
+      position: absolute;
+      width: 750px;
+      height: 750px;
+      bottom: -150px;
+      left: 25%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(221, 214, 254, 0.35) 0%, rgba(243, 232, 255, 0.14) 50%, transparent 75%);
+      filter: blur(95px);
+      animation: floatOrb 28s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(45px, 40px) scale(1.08); }
+      100% { transform: translate(-35px, -30px) scale(0.95); }
+    }
+
+    /* Glass Tile Surface */
+    .tile-card, .glass-tile {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(224, 231, 255, 0.90);
+      border-radius: 2rem;
+      box-shadow:
+        0 10px 30px -5px rgba(124, 58, 237, 0.05),
+        0 4px 12px -2px rgba(2, 132, 199, 0.04),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tile-card:hover, .glass-tile:hover {
+      background: rgba(255, 255, 255, 0.96);
+      border-color: rgba(196, 181, 253, 0.95);
+      transform: translateY(-2px);
+      box-shadow:
+        0 20px 40px -10px rgba(124, 58, 237, 0.12),
+        0 8px 18px -4px rgba(2, 132, 199, 0.06);
+    }
+
+    /* Scroll Reveal Engine */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(28px) scale(0.99);
+      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+    .scroll-reveal.revealed {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .delay-100 { transition-delay: 0.1s; }
+    .delay-200 { transition-delay: 0.2s; }
+    .delay-300 { transition-delay: 0.3s; }
+    .delay-400 { transition-delay: 0.4s; }
+
+    /* Gradient Typography */
+    .gradient-text-shimmer {
+      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 32%, #6d28d9 65%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-lift {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-lift:hover {
+      transform: translateY(-1.5px);
+    }
+    .btn-lift:active {
+      transform: translateY(0);
+    }
+
+    /* Subtle custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Nav scrollbar hidden and clean tab transitions */
+    nav {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    nav::-webkit-scrollbar {
+      display: none !important;
+    }
+    nav a {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    nav a:hover {
+      transform: translateY(-1px);
+    }
+
+    .clean-mode .no-screenshot {
+      display: none !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen w-screen overflow-x-hidden flex flex-col antialiased relative">
+
+  <!-- Ambient Aurora Glow Canvas -->
+  <div class="aurora-bg">
+    <div class="aurora-orb-1"></div>
+    <div class="aurora-orb-2"></div>
+    <div class="aurora-orb-3"></div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TOP BAR WITH UNIFIED TABS                  -->
+  <!-- ========================================== -->
+  <header class="sticky top-0 z-50 backdrop-blur-xl bg-white/85 border-b border-purple-100/80 shadow-xs">
+    <div class="max-w-[1560px] w-full mx-auto px-6 lg:px-10 py-3.5 flex items-center justify-between gap-4 lg:gap-8">
+
+      <!-- Brand Logo -->
+      <a href="home.html" class="flex items-center space-x-3 shrink-0 group">
+        <div class="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-sky-500 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold tracking-tight text-xl text-slate-900 leading-tight">Cryo<span class="text-purple-600">Guard</span></span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100/90 text-purple-800 border border-purple-200">AI</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-medium tracking-tight">Predictive Cold-Storage</span>
+        </div>
+      </a>
+
+      <!-- Navigation Tabs (Identical 7 Tabs Across All Pages) -->
+      <nav class="flex items-center space-x-1 lg:space-x-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-purple-100/80 text-xs font-semibold shadow-inner shrink-0">
+        <a href="home.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="index.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Live Monitor</span>
+        </a>
+        <a href="risk.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span>Risk Horizons</span>
+        </a>
+        <a href="events.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Event Physics</span>
+        </a>
+        <a href="alerts.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>Policy Engine</span>
+        </a>
+        <a href="briefings.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>Flight Surgeon</span>
+        </a>
+        <a href="fleet.html" class="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-bold shadow-md shadow-purple-500/25 flex items-center space-x-1.5 whitespace-nowrap transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span>Depot Fleet</span>
+        </a>
+      </nav>
+
+      <!-- Right Controls -->
+      <div class="flex items-center space-x-3 text-xs md:text-sm shrink-0 whitespace-nowrap">
+        <button onclick="toggleCleanMode()" class="btn-lift px-3.5 py-2 text-xs font-semibold rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-700 hover:text-purple-700 transition flex items-center space-x-1.5 shadow-xs whitespace-nowrap no-screenshot">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Clean <kbd class="ml-1 text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300 text-slate-600 font-mono">[S]</kbd></span>
+        </button>
+        <a href="dashboard.html" target="_blank" class="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-purple-700 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-xs transition whitespace-nowrap no-screenshot">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+          <span>Pitch Mode <kbd class="ml-1 text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">[P]</kbd></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT -->
+  <main class="flex-1 max-w-[1560px] w-full mx-auto px-6 lg:px-10 py-8 space-y-8 relative z-10">
+
+    <!-- HERO BANNER / SUBHEADER -->
+    <div class="tile-card p-8 bg-gradient-to-r from-purple-50/90 via-white/95 to-sky-50/90 border border-purple-100/90 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 scroll-reveal">
+      <div>
+        <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-purple-600 mb-1">
+          <span>Depot Alpha Command Matrix</span>
+          <span>•</span>
+          <span class="text-sky-600">Multi-Unit Telemetry Grid</span>
+          <span class="ml-2 px-3 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200/80 font-mono text-[11px] font-bold">12 Units · $1.42M Protected</span>
+        </div>
+        <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Depot Alpha Cold-Storage Fleet Telemetry
+        </h1>
+        <p class="text-sm text-slate-600 mt-1 max-w-3xl">
+          Real-time health matrix for 12 commercial biomedical refrigeration units across Cold Vault Bays 1 through 4. Monitored for temperature stability, compressor duty cycle fatigue, and predictive breach horizon.
+        </p>
+      </div>
+
+      <!-- Filter Pills -->
+      <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl shrink-0">
+        <button onclick="filterFleet('all')" id="flt-all" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-white text-purple-700 shadow-sm">
+          All 12 Units
+        </button>
+        <button onclick="filterFleet('refrig')" id="flt-refrig" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900">
+          2°C–8°C Fridge (9)
+        </button>
+        <button onclick="filterFleet('ult')" id="flt-ult" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900">
+          -80°C / -20°C Freezers (3)
+        </button>
+        <button onclick="filterFleet('alert')" id="flt-alert" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition text-rose-700 hover:bg-rose-50 flex items-center">
+          <span class="w-2 h-2 rounded-full bg-rose-500 inline-block mr-1.5 animate-pulse"></span>Action Required (1)
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 TOP METRIC TILES -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+      <!-- Metric 1: Fleet Health -->
+      <div class="tile-card p-6 flex flex-col justify-between scroll-reveal delay-100">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>FLEET HEALTH</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold text-[11px]">11/12 Nominal</span>
+        </div>
+        <div class="my-1">
+          <div class="text-4xl font-black text-purple-700 tracking-tight font-mono">91.7%</div>
+          <div class="text-xs font-semibold text-purple-700 mt-1">99.98% Fleet SLA</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          1 unit under watch: <strong class="text-rose-600">Unit A-12 (Drifting)</strong>
+        </p>
+      </div>
+
+      <!-- Metric 2: Doses Monitored -->
+      <div class="tile-card p-6 flex flex-col justify-between scroll-reveal delay-200">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>PROTECTED INVENTORY</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-semibold text-[11px]">38,400 Doses</span>
+        </div>
+        <div class="my-1">
+          <div class="text-4xl font-black text-sky-700 tracking-tight font-mono">$1,424,000</div>
+          <div class="text-xs font-semibold text-emerald-700 mt-1">100% Batches Intact</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          Total cold-chain payload secured in Depot Alpha
+        </p>
+      </div>
+
+      <!-- Metric 3: Fleet Mean Temp -->
+      <div class="tile-card p-6 flex flex-col justify-between scroll-reveal delay-300">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>MEAN REFRIG TEMP</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-[11px]">Target 4.0°C</span>
+        </div>
+        <div class="my-1">
+          <div class="text-4xl font-black text-emerald-600 tracking-tight font-mono">4.12 <span class="text-xl font-bold font-sans text-slate-500">°C</span></div>
+          <div class="text-xs font-semibold text-emerald-700 mt-1">Thermal Equilibrium Stable</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          Variance across 9 active units: <strong class="text-slate-700">σ = 0.32°C</strong>
+        </p>
+      </div>
+
+      <!-- Metric 4: Excursions Prevented -->
+      <div class="tile-card p-6 flex flex-col justify-between scroll-reveal delay-400">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>PREDICTIVE DEFLECTIONS</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-semibold text-[11px]">This Month</span>
+        </div>
+        <div class="my-1">
+          <div class="text-4xl font-black text-indigo-700 tracking-tight font-mono">7 <span class="text-xl font-bold font-sans text-slate-500">Averted</span></div>
+          <div class="text-xs font-semibold text-indigo-700 mt-1">Zero Spoilage Incidents</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          Estimated asset savings: <strong class="text-slate-800">$340,000</strong>
+        </p>
+      </div>
+
+    </div>
+
+    <!-- 12-UNIT INTERACTIVE FLEET GRID -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="fleet-grid">
+
+      <!-- Unit A-12 (CRITICAL WATCH HERO CARD) -->
+      <div class="unit-card refrig alert tile-card p-5 border-2 border-rose-300 bg-rose-50/40 relative overflow-hidden flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-12</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-rose-200 text-rose-800 font-bold">Bay 1</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-rose-600 text-white font-mono font-bold text-xs shadow-sm">
+            BREACH WATCH
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-rose-600 font-mono">5.82°C</span>
+            <span class="text-xs font-mono text-rose-700 font-bold">+0.048°C/min drift</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            mRNA-1273 Spikevax (3,400 vials · $142.8k)
+          </div>
+          <div class="w-full bg-slate-200 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-rose-500 h-full rounded-full" style="width: 78%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Safe Ceiling: 8.0°C</span>
+            <span class="text-rose-600 font-bold">Breach in ~38 min</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-rose-200/60 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Trip</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm flex items-center space-x-1">
+            <span>Inspect Unit</span> →
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-01 (Ultra-Low) -->
+      <div class="unit-card ult tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-01</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 1</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">-78.2°C</span>
+            <span class="text-xs font-mono text-emerald-600 font-bold">Target -80°C</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Ultra-Low Biologics (Bulk mRNA · $280k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 98%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Range: -86°C to -70°C</span>
+            <span class="text-emerald-600 font-bold">Health 99%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Cascade Duty: <strong>48%</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-02 (Backup Validated) -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-02</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 font-bold">Backup</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-purple-100 text-purple-800 font-mono font-bold text-xs">
+            READY (55% FREE)
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">3.80°C</span>
+            <span class="text-xs font-mono text-emerald-600 font-bold">Steady State</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Pre-Chilled Emergency Reserve (Free: 12 Trays)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-purple-500 h-full rounded-full" style="width: 96%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Designated target for Lot #99201-A</span>
+            <span class="text-purple-600 font-bold">Health 98%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-03 -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-03</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 1</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">4.10°C</span>
+            <span class="text-xs font-mono text-slate-400">Target 4.0°C</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Pediatric Vaccines (MMR, Varicella · $94k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 95%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Range: 2.0°C – 8.0°C</span>
+            <span class="text-emerald-600 font-bold">Health 96%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-04 (Auto-Defrost) -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-04</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 2</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-sky-100 text-sky-800 font-mono font-bold text-xs">
+            DEFROST RECOVERY
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">4.42°C</span>
+            <span class="text-xs font-mono text-sky-600 font-bold">Pulldown Phase</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Seasonal Influenza Stock (5,200 doses · $115k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-sky-500 h-full rounded-full" style="width: 91%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Cycle completed 12m ago</span>
+            <span class="text-sky-600 font-bold">Health 94%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Heater Coil: <strong>Off</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-05 -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-05</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 2</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">3.92°C</span>
+            <span class="text-xs font-mono text-slate-400">Target 4.0°C</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Insulin & Peptide Hormones ($82k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 97%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Stable over 72 hours</span>
+            <span class="text-emerald-600 font-bold">Health 97%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-06 -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-06</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 2</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">2.80°C</span>
+            <span class="text-xs font-mono text-slate-400">Blood Bank Safe</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Fresh Frozen Plasma Chiller ($67k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 96%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Range: 1.0°C – 6.0°C</span>
+            <span class="text-emerald-600 font-bold">Health 95%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-07 -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-07</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 3</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">4.18°C</span>
+            <span class="text-xs font-mono text-slate-400">Target 4.0°C</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Monoclonal Antibodies (Rituximab · $175k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 96%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Range: 2.0°C – 8.0°C</span>
+            <span class="text-emerald-600 font-bold">Health 96%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-08 (Ultra-Low) -->
+      <div class="unit-card ult tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-08</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 3</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">-20.4°C</span>
+            <span class="text-xs font-mono text-emerald-600 font-bold">Target -20°C</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Clinical Trials Phase III Bio-Samples ($110k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 98%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Range: -25°C to -15°C</span>
+            <span class="text-emerald-600 font-bold">Health 98%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-09 -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-09</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 4</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">4.02°C</span>
+            <span class="text-xs font-mono text-slate-400">Target 4.0°C</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Rabies & Antivenom Serum Reserves ($85k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 99%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Range: 2.0°C – 8.0°C</span>
+            <span class="text-emerald-600 font-bold">Health 99%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-10 -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-10</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 4</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">3.74°C</span>
+            <span class="text-xs font-mono text-slate-400">Target 4.0°C</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Recombinant Clotting Factors ($122k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 97%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Range: 2.0°C – 8.0°C</span>
+            <span class="text-emerald-600 font-bold">Health 97%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+      <!-- Unit A-11 -->
+      <div class="unit-card refrig tile-card p-5 flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="font-black text-slate-900 text-base">Unit A-11</span>
+            <span class="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold">Bay 4</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-mono font-bold text-xs">
+            OPTIMAL
+          </span>
+        </div>
+
+        <div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-4xl font-black text-slate-900 font-mono">4.50°C</span>
+            <span class="text-xs font-mono text-slate-400">Target 4.0°C</span>
+          </div>
+          <div class="text-xs text-slate-600 mt-1 font-medium">
+            Specialty Oncology Injectables ($138k)
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 93%"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>Range: 2.0°C – 8.0°C</span>
+            <span class="text-emerald-600 font-bold">Health 93%</span>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-xs font-mono text-slate-500">Compressor: <strong>Normal</strong></span>
+          <a href="index.html" class="btn-lift px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-bold text-xs transition">
+            View
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    function filterFleet(category) {
+      ['all', 'refrig', 'ult', 'alert'].forEach(k => {
+        const btn = document.getElementById(`flt-${k}`);
+        if (k === category) {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition bg-white text-purple-700 shadow-sm';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-900';
+        }
+      });
+
+      const cards = document.querySelectorAll('.unit-card');
+      cards.forEach(card => {
+        if (category === 'all') {
+          card.style.display = 'flex';
+        } else if (category === 'refrig' && card.classList.contains('refrig')) {
+          card.style.display = 'flex';
+        } else if (category === 'ult' && card.classList.contains('ult')) {
+          card.style.display = 'flex';
+        } else if (category === 'alert' && card.classList.contains('alert')) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function toggleCleanMode() {
+      document.body.classList.toggle('clean-mode');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 's' || e.key === 'S') {
+        toggleCleanMode();
+      }
+    });
+
+    // Smooth Page & Tab Navigation and Reveal
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('nav a, header a[href$=".html"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+          const href = link.getAttribute('href');
+          if (href && !href.startsWith('#') && !link.target && href !== window.location.pathname.split('/').pop()) {
+            e.preventDefault();
+            document.body.classList.add('page-exit');
+            setTimeout(() => {
+              window.location.href = href;
+            }, 120);
+          }
+        });
+      });
+
+      // Stagger fleet unit cards
+      document.querySelectorAll('.unit-card').forEach((card, idx) => {
+        card.classList.add('scroll-reveal');
+        const delay = ((idx % 4) + 1) * 100;
+        card.style.transitionDelay = `${delay}ms`;
+      });
+
+      // Scroll Reveal Observer
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+          }
+        });
+      }, { threshold: 0.08 });
+      document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+    });
+  </script>
+</body>
+</html>

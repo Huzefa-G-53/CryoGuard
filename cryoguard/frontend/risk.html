@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryoGuard AI · Excursion Risk Horizons & Trajectory Modeling</title>
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            themeBg: '#f8faff',
+            purpleAccent: '#7c3aed',
+            purpleLight: '#ede9fe',
+            purpleSubtle: '#f5f3ff',
+            blueAccent: '#0284c7',
+            blueLight: '#e0f2fe',
+            blueSubtle: '#f0f9ff',
+            slateDark: '#0f172a',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after {
+      cursor: inherit;
+    }
+    html, body {
+      cursor: default !important;
+      scroll-behavior: smooth;
+    }
+    button, [role="button"], input[type="range"], .clickable, .btn-lift, [onclick], kbd, select, a {
+      cursor: pointer !important;
+    }
+    input[type="text"], input[type="number"], textarea {
+      cursor: text !important;
+    }
+    canvas {
+      cursor: crosshair !important;
+    }
+
+    body {
+      background-color: #f8faff;
+      color: #0f172a;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.page-exit {
+      opacity: 0;
+      transform: translateY(-3px);
+    }
+
+    main {
+      animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      will-change: opacity, transform;
+    }
+
+    @keyframes pageFadeIn {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Ambient Aurora Glow */
+    .aurora-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .aurora-orb-1 {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      top: -180px;
+      left: 10%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(196, 181, 253, 0.40) 0%, rgba(237, 233, 254, 0.18) 50%, transparent 75%);
+      filter: blur(85px);
+      animation: floatOrb 22s ease-in-out infinite alternate;
+    }
+    .aurora-orb-2 {
+      position: absolute;
+      width: 650px;
+      height: 650px;
+      top: 60px;
+      right: 8%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(186, 230, 253, 0.45) 0%, rgba(224, 242, 254, 0.16) 50%, transparent 75%);
+      filter: blur(85px);
+      animation: floatOrb 26s ease-in-out infinite alternate-reverse;
+    }
+    .aurora-orb-3 {
+      position: absolute;
+      width: 750px;
+      height: 750px;
+      bottom: -150px;
+      left: 25%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(221, 214, 254, 0.35) 0%, rgba(243, 232, 255, 0.14) 50%, transparent 75%);
+      filter: blur(95px);
+      animation: floatOrb 28s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(45px, 40px) scale(1.08); }
+      100% { transform: translate(-35px, -30px) scale(0.95); }
+    }
+
+    /* Glass Tile Surface */
+    .tile-card, .glass-tile {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(224, 231, 255, 0.90);
+      border-radius: 2rem;
+      box-shadow:
+        0 10px 30px -5px rgba(124, 58, 237, 0.05),
+        0 4px 12px -2px rgba(2, 132, 199, 0.04),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tile-card:hover, .glass-tile:hover {
+      background: rgba(255, 255, 255, 0.96);
+      border-color: rgba(196, 181, 253, 0.95);
+      transform: translateY(-2px);
+      box-shadow:
+        0 20px 40px -10px rgba(124, 58, 237, 0.12),
+        0 8px 18px -4px rgba(2, 132, 199, 0.06);
+    }
+
+    /* Scroll Reveal Engine */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(28px) scale(0.99);
+      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+    .scroll-reveal.revealed {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .delay-100 { transition-delay: 0.1s; }
+    .delay-200 { transition-delay: 0.2s; }
+    .delay-300 { transition-delay: 0.3s; }
+    .delay-400 { transition-delay: 0.4s; }
+
+    /* Gradient Typography */
+    .gradient-text-shimmer {
+      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 32%, #6d28d9 65%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-lift {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-lift:hover {
+      transform: translateY(-1.5px);
+    }
+    .btn-lift:active {
+      transform: translateY(0);
+    }
+
+    .num-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Clean Snapshot Mode */
+    body.clean-snapshot-mode nav,
+    body.clean-snapshot-mode .no-screenshot {
+      display: none !important;
+    }
+
+    nav {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    nav::-webkit-scrollbar {
+      display: none !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen w-screen overflow-x-hidden flex flex-col antialiased relative">
+
+  <!-- Ambient Aurora Glow Canvas -->
+  <div class="aurora-bg">
+    <div class="aurora-orb-1"></div>
+    <div class="aurora-orb-2"></div>
+    <div class="aurora-orb-3"></div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TOP BAR WITH UNIFIED TABS                  -->
+  <!-- ========================================== -->
+  <header class="sticky top-0 z-50 backdrop-blur-xl bg-white/85 border-b border-purple-100/80 shadow-xs">
+    <div class="max-w-[1560px] w-full mx-auto px-6 lg:px-10 py-3.5 flex items-center justify-between gap-4 lg:gap-8">
+
+      <!-- Brand Logo -->
+      <a href="home.html" class="flex items-center space-x-3 shrink-0 group">
+        <div class="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-sky-500 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold tracking-tight text-xl text-slate-900 leading-tight">Cryo<span class="text-purple-600">Guard</span></span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100/90 text-purple-800 border border-purple-200">AI</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-medium tracking-tight">Predictive Cold-Storage</span>
+        </div>
+      </a>
+
+      <!-- Navigation Tabs (Identical 7 Tabs Across All Pages) -->
+      <nav class="flex items-center space-x-1 lg:space-x-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-purple-100/80 text-xs font-semibold shadow-inner shrink-0">
+        <a href="home.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="index.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Live Monitor</span>
+        </a>
+        <a href="risk.html" class="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-bold shadow-md shadow-purple-500/25 flex items-center space-x-1.5 whitespace-nowrap transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span>Risk Horizons</span>
+        </a>
+        <a href="events.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Event Physics</span>
+        </a>
+        <a href="alerts.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>Policy Engine</span>
+        </a>
+        <a href="briefings.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>Flight Surgeon</span>
+        </a>
+        <a href="fleet.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span>Depot Fleet</span>
+        </a>
+      </nav>
+
+      <!-- Right Controls -->
+      <div class="flex items-center space-x-3 text-xs md:text-sm shrink-0 whitespace-nowrap">
+        <button onclick="toggleCleanMode()" class="btn-lift px-3.5 py-2 text-xs font-semibold rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-700 hover:text-purple-700 transition flex items-center space-x-1.5 shadow-xs whitespace-nowrap no-screenshot">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Clean <kbd class="ml-1 text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300 text-slate-600 font-mono">[S]</kbd></span>
+        </button>
+        <a href="dashboard.html" target="_blank" class="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-purple-700 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-xs transition whitespace-nowrap no-screenshot">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+          <span>Pitch Mode <kbd class="ml-1 text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">[P]</kbd></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- MAIN CONTENT AREA                          -->
+  <!-- ========================================== -->
+  <main class="flex-1 max-w-[1560px] mx-auto px-6 lg:px-10 py-8 w-full flex flex-col gap-8 relative z-10">
+
+    <!-- HERO HEADER CARD -->
+    <div class="tile-card p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-l-4 border-l-purple-600 bg-gradient-to-r from-white via-purple-50/30 to-sky-50/30 scroll-reveal">
+      <div>
+        <div class="flex items-center space-x-2.5 mb-2">
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200/80 uppercase font-mono tracking-wide">Statistical Inference Engine</span>
+          <span class="text-slate-400">·</span>
+          <span class="text-xs font-mono text-sky-700 font-bold">Normal Cumulative Distribution Function (CDF)</span>
+        </div>
+        <h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight gradient-text-shimmer">Predictive Horizon Risk Modeling</h1>
+        <p class="text-slate-600 text-sm md:text-base mt-2 max-w-2xl leading-relaxed">
+          CryoGuard AI estimates excursion probability across 4 strategic horizons (+15m, +30m, +60m, +120m) by propagating Theil-Sen robust slopes into Gaussian error cones with residual variance scaling.
+        </p>
+      </div>
+
+      <!-- Quick Metrics Strip (Enlarged) -->
+      <div class="flex items-center gap-3 font-mono shrink-0">
+        <div class="bg-white/95 p-4 rounded-2xl border border-purple-100 shadow-sm text-center min-w-[135px]">
+          <span class="text-[11px] text-slate-500 font-extrabold uppercase block tracking-wider mb-0.5">Current Temp</span>
+          <span class="text-3xl lg:text-4xl font-black text-purple-700 num-tabular tracking-tight" id="stat-cur-temp">7.28°C</span>
+        </div>
+        <div class="bg-white/95 p-4 rounded-2xl border border-purple-100 shadow-sm text-center min-w-[135px]">
+          <span class="text-[11px] text-slate-500 font-extrabold uppercase block tracking-wider mb-0.5">Drift Rate</span>
+          <span class="text-3xl lg:text-4xl font-black text-amber-700 num-tabular tracking-tight" id="stat-cur-rate">+0.024°C/m</span>
+        </div>
+        <div class="bg-white/95 p-4 rounded-2xl border border-purple-100 shadow-sm text-center min-w-[135px]">
+          <span class="text-[11px] text-slate-500 font-extrabold uppercase block tracking-wider mb-0.5">Buffer to 8°C</span>
+          <span class="text-3xl lg:text-4xl font-black text-emerald-700 num-tabular tracking-tight" id="stat-cur-buf">0.72°C</span>
+        </div>
+      </div>
+    </div>
+    <!-- 4 HORIZON TILES GRID -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <!-- Horizon 15m -->
+      <div class="tile-card p-6 flex flex-col justify-between border-t-4 border-t-sky-500 scroll-reveal delay-100" id="card-h-15">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-sky-700 px-3 py-1 rounded-full bg-sky-100 border border-sky-200/80">+15m Horizon</span>
+            <span class="text-xs font-semibold text-slate-400 font-mono">T+15m</span>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Surface Convection</h3>
+          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Air volume warming rate & door breach exposure.</p>
+        </div>
+        <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-end justify-between">
+          <div>
+            <span class="text-xs text-slate-500 block font-semibold mb-0.5">Excursion Risk</span>
+            <span class="text-4xl font-black font-mono text-sky-700 num-tabular leading-none" id="prob-h-15">18%</span>
+          </div>
+          <span class="text-xs font-bold text-sky-700 px-3 py-1 rounded-xl bg-sky-100 border border-sky-200">LOW</span>
+        </div>
+      </div>
+
+      <!-- Horizon 30m -->
+      <div class="tile-card p-6 flex flex-col justify-between border-t-4 border-t-amber-500 scroll-reveal delay-200" id="card-h-30">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-amber-700 px-3 py-1 rounded-full bg-amber-100 border border-amber-200/80">+30m Horizon</span>
+            <span class="text-xs font-semibold text-slate-400 font-mono">T+30m</span>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Liquid Core Buffer</h3>
+          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Vial thermal inertia boundary limit.</p>
+        </div>
+        <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-end justify-between">
+          <div>
+            <span class="text-xs text-slate-500 block font-semibold mb-0.5">Excursion Risk</span>
+            <span class="text-4xl font-black font-mono text-amber-600 num-tabular leading-none" id="prob-h-30">49%</span>
+          </div>
+          <span class="text-xs font-bold text-amber-800 px-3 py-1 rounded-xl bg-amber-100 border border-amber-200">ELEVATED</span>
+        </div>
+      </div>
+
+      <!-- Horizon 60m -->
+      <div class="tile-card p-6 flex flex-col justify-between border-t-4 border-t-rose-500 scroll-reveal delay-300" id="card-h-60">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-rose-700 px-3 py-1 rounded-full bg-rose-100 border border-rose-200/80">+60m Horizon</span>
+            <span class="text-xs font-semibold text-slate-400 font-mono">T+60m</span>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Action Threshold</h3>
+          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Standard biologics stock transfer deadline.</p>
+        </div>
+        <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-end justify-between">
+          <div>
+            <span class="text-xs text-slate-500 block font-semibold mb-0.5">Excursion Risk</span>
+            <span class="text-4xl font-black font-mono text-rose-600 num-tabular leading-none" id="prob-h-60">89%</span>
+          </div>
+          <span class="text-xs font-bold text-rose-800 px-3 py-1 rounded-xl bg-rose-100 border border-rose-200">CRITICAL</span>
+        </div>
+      </div>
+
+      <!-- Horizon 120m -->
+      <div class="tile-card p-6 flex flex-col justify-between border-t-4 border-t-purple-600 scroll-reveal delay-400" id="card-h-120">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-purple-700 px-3 py-1 rounded-full bg-purple-100 border border-purple-200/80">+120m Horizon</span>
+            <span class="text-xs font-semibold text-slate-400 font-mono">T+120m</span>
+          </div>
+          <h3 class="text-base font-bold text-slate-900">Strategic Lead Time</h3>
+          <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Unchecked thermodynamic runaway projection.</p>
+        </div>
+        <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-end justify-between">
+          <div>
+            <span class="text-xs text-slate-500 block font-semibold mb-0.5">Excursion Risk</span>
+            <span class="text-4xl font-black font-mono text-purple-800 num-tabular leading-none" id="prob-h-120">100%</span>
+          </div>
+          <span class="text-xs font-bold text-purple-800 px-3 py-1 rounded-xl bg-purple-100 border border-purple-200">CERTAIN</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN INTERACTIVE BENCHMARK & SIMULATOR -->
+    <div class="grid grid-cols-12 gap-6">
+
+      <!-- LEFT 7 COLUMNS: GAUSSIAN BELL CURVE & CDF VISUALIZER -->
+      <div class="col-span-12 lg:col-span-7 flex flex-col gap-6">
+
+        <!-- Bell Curve Chart Card -->
+        <div class="tile-card p-8 flex flex-col scroll-reveal delay-200">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                <span class="w-3.5 h-3.5 rounded-lg bg-purple-600"></span>
+                <span>Normal CDF & Gaussian Probability Density</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">Visual representation of predicted temperature distribution at selected horizon.</p>
+            </div>
+
+            <!-- Horizon Tabs for Bell Curve -->
+            <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-xs font-mono font-bold">
+              <button onclick="setChartHorizon(15)" id="btn-h-15" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition">15m</button>
+              <button onclick="setChartHorizon(30)" id="btn-h-30" class="px-2.5 py-1 rounded-lg bg-purple-600 text-white shadow-sm transition">30m</button>
+              <button onclick="setChartHorizon(60)" id="btn-h-60" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition">60m</button>
+              <button onclick="setChartHorizon(120)" id="btn-h-120" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition">120m</button>
+            </div>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="w-full h-72 relative">
+            <canvas id="bell-curve-chart"></canvas>
+          </div>
+
+          <!-- Equation & Mathematical Definition Footer -->
+          <div class="mt-4 pt-3 border-t border-purple-100/80 flex items-center justify-between text-xs font-mono text-slate-600">
+            <div>
+              Formula: <span class="font-bold text-purple-700">P(Excursion) = 1 - Φ((8.0°C - μ_h) / σ_h)</span>
+            </div>
+            <div class="text-slate-500">
+              Confidence Interval: <span class="font-bold text-slate-800">95.4% (±2σ)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Physics Sensitivity Sandbox -->
+        <div class="tile-card p-8 flex flex-col gap-4 scroll-reveal delay-300">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-lg bg-sky-500"></span>
+              <span>Interactive Sensitivity Sandbox (Live Simulator)</span>
+            </h2>
+            <span class="text-xs font-mono text-sky-700 font-bold px-2 py-0.5 rounded-lg bg-sky-50">Real-Time Re-calculation</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-xs font-mono">
+            <!-- Slider 1: Starting Temp -->
+            <div class="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-slate-700 font-semibold">
+                <span>STARTING TEMPERATURE (T₀):</span>
+                <span class="text-sm font-black text-purple-700" id="val-t0">7.28°C</span>
+              </div>
+              <input type="range" min="3.0" max="9.0" step="0.05" value="7.28" id="slider-t0" oninput="updateSim()" class="accent-purple-600 cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>3.0°C</span><span>Safe Setpoint (4.5°C)</span><span>9.0°C</span></div>
+            </div>
+
+            <!-- Slider 2: Warming Drift Rate -->
+            <div class="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-slate-700 font-semibold">
+                <span>WARMING DRIFT RATE (m):</span>
+                <span class="text-sm font-black text-amber-700" id="val-slope">+0.024°C/min</span>
+              </div>
+              <input type="range" min="0.000" max="0.080" step="0.002" value="0.024" id="slider-slope" oninput="updateSim()" class="accent-amber-600 cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>0.000 (Stable)</span><span>0.024 (Hero)</span><span>0.080 (Rapid)</span></div>
+            </div>
+
+            <!-- Slider 3: Projection Horizon -->
+            <div class="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-slate-700 font-semibold">
+                <span>TARGET HORIZON (h):</span>
+                <span class="text-sm font-black text-sky-700" id="val-horizon">30 min</span>
+              </div>
+              <input type="range" min="5" max="120" step="5" value="30" id="slider-horizon" oninput="updateSim()" class="accent-sky-600 cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>5 min</span><span>60 min</span><span>120 min</span></div>
+            </div>
+
+            <!-- Slider 4: Residual Sigma -->
+            <div class="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-slate-700 font-semibold">
+                <span>MEASUREMENT UNCERTAINTY (σ):</span>
+                <span class="text-sm font-black text-slate-800" id="val-sigma">0.18°C</span>
+              </div>
+              <input type="range" min="0.05" max="0.50" step="0.01" value="0.18" id="slider-sigma" oninput="updateSim()" class="accent-slate-700 cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>0.05°C (High Precision)</span><span>0.50°C (Noisy)</span></div>
+            </div>
+          </div>
+
+          <!-- Dynamic Output Banner -->
+          <div class="p-5 rounded-2xl bg-gradient-to-r from-purple-100/70 via-sky-100/60 to-purple-100/70 border border-purple-200 flex items-center justify-between">
+            <div>
+              <span class="text-xs font-mono font-bold text-purple-900 uppercase">Simulated Horizon Excursion Risk</span>
+              <p class="text-sm text-slate-700 font-medium mt-0.5">
+                Projected mean at T+<span id="res-horizon" class="font-bold">30</span>m: <span id="res-mean" class="font-mono font-bold text-purple-800">8.00°C</span>
+              </p>
+            </div>
+            <div class="text-right">
+              <span class="text-3xl lg:text-4xl font-black font-mono text-purple-900" id="res-prob">49.2%</span>
+              <span class="text-xs font-mono block text-slate-600 mt-0.5" id="res-breach-label">Breach in ~30 min</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT 5 COLUMNS: THEIL-SEN VS OLS & ADVANCED EVIDENCE -->
+      <div class="col-span-12 lg:col-span-5 flex flex-col gap-6">
+
+        <!-- Theil-Sen Robust Regression Card -->
+        <div class="tile-card p-8 flex flex-col gap-3.5 scroll-reveal delay-200">
+          <div class="flex items-center space-x-2">
+            <span class="w-3.5 h-3.5 rounded-lg bg-emerald-600"></span>
+            <h2 class="text-lg font-bold text-slate-900">Theil-Sen Robust Regression</h2>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed font-sans">
+            Standard linear regression (OLS) is catastrophically vulnerable to outliers: a 1-minute door opening spike can skew an ordinary slope by +400%, generating false emergency calls.
+          </p>
+
+          <!-- OLS vs Theil-Sen Comparison Matrix -->
+          <div class="mt-2 space-y-2.5 text-xs font-mono">
+            <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200">
+              <div class="flex justify-between items-center text-rose-800 font-bold mb-1">
+                <span>Ordinary Least Squares (OLS)</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-100">0% Breakdown Point</span>
+              </div>
+              <p class="text-slate-600 font-sans text-xs">
+                A single sensor spike pulls the entire projection line upwards, triggering false breach warnings.
+              </p>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
+              <div class="flex justify-between items-center text-emerald-800 font-bold mb-1">
+                <span>Theil-Sen Median Estimator</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100">29.3% Breakdown Point</span>
+              </div>
+              <p class="text-slate-600 font-sans text-xs">
+                Calculates the median of all pair slopes: <code>median((T_j - T_i) / (j - i))</code>. Completely ignores temporary spikes.
+              </p>
+            </div>
+          </div>
+
+          <!-- Formula callout -->
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 font-mono text-xs text-slate-700">
+            <strong>Slope Estimator:</strong> β̂ = median { (y_j - y_i) / (x_j - x_i) : i < j }<br>
+            <strong>Noise Immunity:</strong> Up to 29% anomalous ticks without distortion.
+          </div>
+        </div>
+
+        <!-- WHO / CDC Vaccine Excursion Tolerance Table -->
+        <div class="tile-card p-8 flex flex-col gap-3.5 scroll-reveal delay-300">
+          <div class="flex items-center space-x-2">
+            <span class="w-3.5 h-3.5 rounded-lg bg-purple-600"></span>
+            <h2 class="text-lg font-bold text-slate-900">Regulatory Excursion Standards</h2>
+          </div>
+          <p class="text-xs text-slate-600">WHO PQS & CDC Vaccine Storage Guidelines (VVM / Category A Biologics):</p>
+
+          <div class="overflow-x-auto text-xs">
+            <table class="w-full text-left font-sans border-collapse">
+              <thead>
+                <tr class="border-b border-purple-100 text-slate-500 font-mono text-[11px]">
+                  <th class="py-2.5">RANGE</th>
+                  <th class="py-2.5">CLASS</th>
+                  <th class="py-2.5">MAX DURATION</th>
+                  <th class="py-2.5">ACTION</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tr>
+                  <td class="py-2.5 font-mono font-bold text-emerald-700">2.0°C – 8.0°C</td>
+                  <td>Nominal Safe</td>
+                  <td>Continuous</td>
+                  <td>Nominal monitor</td>
+                </tr>
+                <tr>
+                  <td class="py-2.5 font-mono font-bold text-amber-700">8.1°C – 10.0°C</td>
+                  <td>Minor Excursion</td>
+                  <td>&lt; 2 hours</td>
+                  <td>Log & stage cooler</td>
+                </tr>
+                <tr>
+                  <td class="py-2.5 font-mono font-bold text-rose-700">&gt; 10.0°C</td>
+                  <td>Severe Breach</td>
+                  <td>&lt; 15 minutes</td>
+                  <td>Immediate evacuation</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Navigation Next Tile -->
+        <div class="tile-card p-6 bg-gradient-to-r from-purple-600 via-indigo-600 to-sky-600 text-white flex items-center justify-between scroll-reveal delay-400">
+          <div>
+            <span class="text-xs uppercase font-mono font-bold text-purple-200 block">Next Feature Deep-Dive</span>
+            <h3 class="text-lg font-bold">Event Intelligence & Physics Heuristics</h3>
+            <p class="text-xs text-purple-100 mt-1">Explore how the physics classifier separates door openings from real compressor failures.</p>
+          </div>
+          <a href="events.html" class="btn-lift px-5 py-2.5 bg-white text-purple-700 rounded-2xl font-bold text-xs shadow-md shrink-0">
+            View Events →
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    let bellChartInstance = null;
+    let selectedHorizon = 30;
+
+    // Normal Cumulative Distribution Function approximation (Abramowitz & Stegun)
+    function normalCDF(z) {
+      if (z < -6) return 0;
+      if (z > 6) return 1;
+      const b1 = 0.319381530;
+      const b2 = -0.356563782;
+      const b3 = 1.781477937;
+      const b4 = -1.821255978;
+      const b5 = 1.330274429;
+      const p = 0.2316419;
+      const c = 0.39894228;
+      const t = 1.0 / (1.0 + p * Math.abs(z));
+      const erf = 1.0 - c * Math.exp(-z * z / 2.0) * t * (t * (t * (t * b5 + b4) + b3) + b2) + b1;
+      return z >= 0 ? erf : 1.0 - erf;
+    }
+
+    // Normal probability density function
+    function normalPDF(x, mean, sigma) {
+      const factor = 1 / (sigma * Math.sqrt(2 * Math.PI));
+      const exp = Math.exp(-0.5 * Math.pow((x - mean) / sigma, 2));
+      return factor * exp;
+    }
+
+    function initBellCurveChart() {
+      const ctx = document.getElementById('bell-curve-chart').getContext('2d');
+      const mean = 7.28 + 0.024 * selectedHorizon;
+      const sigma = 0.18 * Math.sqrt(1 + selectedHorizon / 30);
+
+      const labels = [];
+      const densityData = [];
+      const breachShade = [];
+
+      for (let t = 4.0; t <= 12.0; t += 0.1) {
+        labels.push(t.toFixed(1));
+        const pdf = normalPDF(t, mean, sigma);
+        densityData.push(pdf);
+        if (t >= 8.0) {
+          breachShade.push(pdf);
+        } else {
+          breachShade.push(null);
+        }
+      }
+
+      bellChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Probability Density f(T)',
+              data: densityData,
+              borderColor: '#7c3aed',
+              borderWidth: 3,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.2
+            },
+            {
+              label: 'Excursion Tail (T > 8.0°C)',
+              data: breachShade,
+              borderColor: '#f43f5e',
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: true,
+              backgroundColor: 'rgba(244, 63, 94, 0.25)',
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' },
+                color: '#334155'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255, 255, 255, 0.96)',
+              titleColor: '#0f172a',
+              bodyColor: '#334155',
+              borderColor: '#c4b5fd',
+              borderWidth: 1.5,
+              padding: 10,
+              cornerRadius: 12,
+              callbacks: {
+                title: (items) => `Temp: ${items[0].label}°C`,
+                label: (item) => ` Density: ${item.raw ? item.raw.toFixed(4) : 0}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(224, 231, 255, 0.7)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } }
+            },
+            y: {
+              grid: { color: 'rgba(224, 231, 255, 0.7)' },
+              ticks: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function setChartHorizon(h) {
+      selectedHorizon = h;
+      [15, 30, 60, 120].forEach(val => {
+        const btn = document.getElementById(`btn-h-${val}`);
+        if (val === h) {
+          btn.className = "px-2.5 py-1 rounded-lg bg-purple-600 text-white shadow-sm transition";
+        } else {
+          btn.className = "px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition";
+        }
+      });
+
+      // Update Bell Curve
+      const mean = 7.28 + 0.024 * selectedHorizon;
+      const sigma = 0.18 * Math.sqrt(1 + selectedHorizon / 30);
+      const densityData = [];
+      const breachShade = [];
+
+      for (let t = 4.0; t <= 12.0; t += 0.1) {
+        const pdf = normalPDF(t, mean, sigma);
+        densityData.push(pdf);
+        if (t >= 8.0) {
+          breachShade.push(pdf);
+        } else {
+          breachShade.push(null);
+        }
+      }
+
+      bellChartInstance.data.datasets[0].data = densityData;
+      bellChartInstance.data.datasets[1].data = breachShade;
+      bellChartInstance.update();
+
+      // Sync slider
+      document.getElementById('slider-horizon').value = h;
+      updateSim();
+    }
+
+    function updateSim() {
+      const t0 = parseFloat(document.getElementById('slider-t0').value);
+      const slope = parseFloat(document.getElementById('slider-slope').value);
+      const h = parseFloat(document.getElementById('slider-horizon').value);
+      const sigma0 = parseFloat(document.getElementById('slider-sigma').value);
+
+      document.getElementById('val-t0').innerText = `${t0.toFixed(2)}°C`;
+      document.getElementById('val-slope').innerText = `+${slope.toFixed(3)}°C/min`;
+      document.getElementById('val-horizon').innerText = `${h} min`;
+      document.getElementById('val-sigma').innerText = `${sigma0.toFixed(2)}°C`;
+
+      const mean_h = t0 + slope * h;
+      const sigma_h = sigma0 * Math.sqrt(1 + h / 30);
+      const z = (8.0 - mean_h) / sigma_h;
+      const pBreach = Math.max(0, Math.min(1, 1 - normalCDF(z)));
+
+      document.getElementById('res-horizon').innerText = h;
+      document.getElementById('res-mean').innerText = `${mean_h.toFixed(2)}°C`;
+      document.getElementById('res-prob').innerText = `${(pBreach * 100).toFixed(1)}%`;
+
+      if (slope > 0 && mean_h < 8.0) {
+        const minsLeft = Math.round((8.0 - t0) / slope);
+        document.getElementById('res-breach-label').innerText = `Threshold breach in ~${minsLeft} min`;
+      } else if (mean_h >= 8.0) {
+        document.getElementById('res-breach-label').innerText = `Threshold already exceeded!`;
+      } else {
+        document.getElementById('res-breach-label').innerText = `Safe equilibrium maintained`;
+      }
+    }
+
+    function toggleCleanMode() {
+      document.body.classList.toggle('clean-snapshot-mode');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 's' || e.key === 'S') toggleCleanMode();
+    });
+
+    // Smooth Page & Tab Navigation + Scroll Reveal Observer
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('nav a, header a[href$=".html"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+          const href = link.getAttribute('href');
+          if (href && !href.startsWith('#') && !link.target && href !== window.location.pathname.split('/').pop()) {
+            e.preventDefault();
+            document.body.classList.add('page-exit');
+            setTimeout(() => {
+              window.location.href = href;
+            }, 120);
+          }
+        });
+      });
+
+      // Scroll Reveal Observer
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+          }
+        });
+      }, { threshold: 0.1 });
+      document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+
+      initBellCurveChart();
+      updateSim();
+    });
+  </script>
+</body>
+</html>

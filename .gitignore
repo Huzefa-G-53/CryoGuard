@@ -1,0 +1,32 @@
+# Operating system, editor, and Python artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+.gemini/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local configuration, credentials, and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# Build artifacts
+dist/
+build/
+node_modules/
+
+# The dataset is maintained in its own upstream repository.
+# Keep local raw data and generated processing outputs out of this repository.
+/frontend/
+/fridge-sensor-data/
+/cryoguard/data/*.csv
+!/cryoguard/data/baseline_vs_model_comparison.csv
+!/cryoguard/data/physics_ablation_comparison.csv

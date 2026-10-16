@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryoGuard AI · Predictive Cold-Storage Intelligence</title>
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            themeBg: '#f8faff',
+            purpleAccent: '#7c3aed',
+            purpleLight: '#ede9fe',
+            purpleSubtle: '#f5f3ff',
+            blueAccent: '#0284c7',
+            blueLight: '#e0f2fe',
+            blueSubtle: '#f0f9ff',
+            slateDark: '#0f172a',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Reset & Custom Cursor */
+    *, *::before, *::after {
+      cursor: inherit;
+    }
+    html, body {
+      cursor: default !important;
+      scroll-behavior: smooth;
+    }
+    a, button, [role="button"], .clickable {
+      cursor: pointer !important;
+    }
+
+    body {
+      background-color: #f8faff;
+      color: #0f172a;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Reliable, crisp tabular monospace without pixelated Courier New fallback */
+    .font-mono, .num-tabular, code, kbd, samp {
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', Consolas, monospace !important;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body.page-exit {
+      opacity: 0;
+      transform: translateY(-3px);
+    }
+
+    main {
+      animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      will-change: opacity, transform;
+    }
+
+    @keyframes pageFadeIn {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Ambient Aurora Glow */
+    .aurora-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .aurora-orb-1 {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      top: -180px;
+      left: 10%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(196, 181, 253, 0.45) 0%, rgba(237, 233, 254, 0.20) 50%, transparent 75%);
+      filter: blur(85px);
+      animation: floatOrb 22s ease-in-out infinite alternate;
+    }
+    .aurora-orb-2 {
+      position: absolute;
+      width: 650px;
+      height: 650px;
+      top: 40px;
+      right: 8%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(186, 230, 253, 0.50) 0%, rgba(224, 242, 254, 0.18) 50%, transparent 75%);
+      filter: blur(85px);
+      animation: floatOrb 26s ease-in-out infinite alternate-reverse;
+    }
+    .aurora-orb-3 {
+      position: absolute;
+      width: 750px;
+      height: 750px;
+      bottom: -150px;
+      left: 25%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(221, 214, 254, 0.38) 0%, rgba(243, 232, 255, 0.15) 50%, transparent 75%);
+      filter: blur(95px);
+      animation: floatOrb 28s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(45px, 40px) scale(1.08); }
+      100% { transform: translate(-35px, -30px) scale(0.95); }
+    }
+
+    /* Dynamic Canvas */
+    #kinetic-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Glass Surfaces */
+    .glass-tile {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(224, 231, 255, 0.90);
+      border-radius: 2rem;
+      box-shadow:
+        0 10px 30px -5px rgba(124, 58, 237, 0.05),
+        0 4px 12px -2px rgba(2, 132, 199, 0.04),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-tile:hover {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(196, 181, 253, 0.95);
+      transform: translateY(-3px);
+      box-shadow:
+        0 22px 48px -10px rgba(124, 58, 237, 0.14),
+        0 10px 20px -5px rgba(2, 132, 199, 0.08);
+    }
+
+    /* Scroll Reveal Engine */
+    .scroll-reveal {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .scroll-reveal.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Gradient Typography */
+    .gradient-text-shimmer {
+      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 32%, #6d28d9 65%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gradient-pill {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.09) 0%, rgba(2, 132, 199, 0.09) 100%);
+      border: 1px solid rgba(196, 181, 253, 0.65);
+    }
+
+    /* Perspective 3D Container */
+    .perspective-container {
+      perspective: 1400px;
+    }
+    .tilt-card {
+      transform-style: preserve-3d;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Pulse Glow */
+    @keyframes pulseSafe {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+      50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    }
+    .pulse-safe {
+      animation: pulseSafe 2.2s infinite;
+    }
+
+    /* Shimmer Button */
+    .btn-gradient-primary {
+      background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #0284c7 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 6s ease infinite;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-gradient-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px -4px rgba(124, 58, 237, 0.40);
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Spotlight Glow */
+    #cursor-glow {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(167, 139, 250, 0.12) 0%, rgba(186, 230, 253, 0.07) 40%, transparent 70%);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      transition: opacity 0.3s;
+    }
+
+    /* Scenario Switcher Active State */
+    .scenario-pill {
+      background: rgba(255, 255, 255, 0.70);
+      color: #475569;
+      border-color: rgba(226, 232, 240, 0.90);
+    }
+    .scenario-pill.active {
+      background: #7c3aed;
+      color: #ffffff;
+      border-color: #7c3aed;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.30);
+    }
+
+    /* Nav scrollbar hidden and clean tab transitions */
+    nav {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    nav::-webkit-scrollbar {
+      display: none !important;
+    }
+    nav a {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    nav a:hover {
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body class="relative min-h-screen flex flex-col selection:bg-purple-200 selection:text-purple-900">
+
+  <!-- Ambient Light Orbs -->
+  <div class="aurora-bg">
+    <div class="aurora-orb-1"></div>
+    <div class="aurora-orb-2"></div>
+    <div class="aurora-orb-3"></div>
+  </div>
+
+  <!-- Interactive 60fps Particle Streamlines -->
+  <canvas id="kinetic-canvas"></canvas>
+
+  <!-- Mouse Spotlight Glow -->
+  <div id="cursor-glow" class="opacity-0 lg:opacity-100"></div>
+
+  <!-- ======================================================== -->
+  <!-- 1. NAVIGATION BAR (Spacious, Non-Wrapping, Harmonious)   -->
+  <!-- ======================================================== -->
+  <header class="sticky top-0 z-30 w-full border-b border-purple-100/60 backdrop-blur-xl bg-white/80 transition-all">
+    <div class="max-w-[1560px] w-full mx-auto px-6 lg:px-10 py-3.5 flex items-center justify-between gap-4 lg:gap-8">
+
+      <!-- Brand Logo (Shrink-0, Generous Right Clearance) -->
+      <a href="home.html" class="flex items-center space-x-3 shrink-0 group">
+        <div class="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-sky-500 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold tracking-tight text-xl text-slate-900 leading-tight">Cryo<span class="text-purple-600">Guard</span></span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100/90 text-purple-800 border border-purple-200">AI</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-medium tracking-tight">Predictive Cold-Storage</span>
+        </div>
+      </a>
+
+      <!-- Navigation Tabs (Guaranteed Whitespace-Nowrap, Never Wraps into 2 lines) -->
+      <nav class="hidden md:flex items-center space-x-1 lg:space-x-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-purple-100/80 text-xs font-semibold shadow-inner shrink-0">
+        <a href="home.html" class="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-bold shadow-md shadow-purple-500/25 flex items-center space-x-1.5 whitespace-nowrap transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="index.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Live Monitor</span>
+        </a>
+        <a href="risk.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span>Risk Horizons</span>
+        </a>
+        <a href="events.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Event Physics</span>
+        </a>
+        <a href="alerts.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>Policy Engine</span>
+        </a>
+        <a href="briefings.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>Flight Surgeon</span>
+        </a>
+        <a href="fleet.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span>Depot Fleet</span>
+        </a>
+      </nav>
+
+      <!-- Action Buttons (Shrink-0, Generous Left Clearance) -->
+      <div class="flex items-center space-x-3 shrink-0">
+        <a href="dashboard.html" class="hidden sm:flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-purple-700 bg-white/80 hover:bg-white border border-slate-200/80 shadow-sm transition whitespace-nowrap">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+          <span>Pitch Mode <kbd class="ml-1 text-[10px] font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-500">[P]</kbd></span>
+        </a>
+        <a href="index.html" class="btn-gradient-primary px-4 py-2 rounded-xl text-white text-xs font-bold shadow-md shadow-purple-500/20 flex items-center space-x-1.5 whitespace-nowrap">
+          <span>Launch Live Monitor</span>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 2. MAIN HERO SECTION                      -->
+  <!-- ========================================== -->
+  <main class="relative z-10 flex-1 max-w-7xl mx-auto w-full px-6 pt-12 pb-24 flex flex-col items-center">
+
+    <!-- Top Innovation Eyebrow Pill -->
+    <div class="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full gradient-pill shadow-sm mb-6 scroll-reveal">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-safe"></span>
+      <span class="text-xs font-bold tracking-wide uppercase text-purple-900">Thermodynamic AI Early-Warning System</span>
+      <span class="text-slate-300">·</span>
+      <span class="text-xs font-medium text-slate-600">Depot Alpha Fleet Online</span>
+    </div>
+
+    <!-- Monumental Hero Statement (Balanced 2-Line Architecture) -->
+    <h1 class="text-center max-w-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1] text-4xl sm:text-6xl lg:text-[4.15rem] mb-6 scroll-reveal delay-100">
+      Zero Spoiled Batches.<br>
+      <span class="gradient-text-shimmer inline-block" style="white-space: nowrap;">Before Temperature Ever Rises.</span>
+    </h1>
+
+    <!-- Punchy 2-Line Sub-lead -->
+    <p class="text-center max-w-2xl text-base sm:text-lg text-slate-600 font-normal leading-relaxed mb-10 scroll-reveal delay-200">
+      Anticipates cold-chain refrigeration failure <strong class="text-slate-900 font-semibold">47 minutes prior</strong> to physical breach.
+      Safeguarding irreplaceable mRNA biologics and pediatric vaccines worldwide.
+    </p>
+
+    <!-- Hero CTA Buttons -->
+    <div class="flex flex-wrap items-center justify-center gap-4 mb-16 scroll-reveal delay-300">
+      <a href="index.html" class="btn-gradient-primary px-7 py-3.5 rounded-2xl text-white font-bold text-sm shadow-xl shadow-purple-500/25 flex items-center space-x-2">
+        <span>Enter Live Command Center</span>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+      <a href="fleet.html" class="px-6 py-3.5 rounded-2xl bg-white/90 hover:bg-white text-slate-700 hover:text-purple-700 font-semibold text-sm border border-slate-200/90 shadow-sm hover:shadow-md transition flex items-center space-x-2">
+        <svg class="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span>Inspect Depot Fleet (12 Units)</span>
+      </a>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 3. INTERACTIVE 3D PERSPECTIVE CENTERPIECE & SCENARIOS    -->
+    <!-- ======================================================== -->
+    <div class="w-full max-w-5xl perspective-container mb-24 scroll-reveal">
+      <div id="hero-tilt-card" class="tilt-card glass-tile p-6 sm:p-8 relative overflow-hidden">
+
+        <!-- Live Scenario Switcher Bar (Interactive Simulation) -->
+        <div class="flex flex-wrap items-center justify-between pb-6 mb-6 border-b border-purple-100/80 gap-3">
+          <div class="flex items-center space-x-3">
+            <div id="state-dot" class="w-3 h-3 rounded-full bg-emerald-500 transition-colors"></div>
+            <div>
+              <div class="text-xs font-bold text-slate-900 tracking-wide" id="state-title">THERMAL EQUILIBRIUM · REAL-TIME TELEMETRY</div>
+              <div class="text-[11px] text-slate-500" id="state-subtitle">Continuous Theil-Sen drift slope modeling at 1 Hz</div>
+            </div>
+          </div>
+
+          <!-- Interactive Simulation Mode Pills -->
+          <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/80 rounded-2xl border border-purple-100/70">
+            <button onclick="setHomeScenario('nominal')" id="pill-nominal" class="scenario-pill active px-3 py-1 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Nominal (4.12°C)</span>
+            </button>
+            <button onclick="setHomeScenario('drift')" id="pill-drift" class="scenario-pill px-3 py-1 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+              <span>Micro-Drift (+47m)</span>
+            </button>
+            <button onclick="setHomeScenario('door')" id="pill-door" class="scenario-pill px-3 py-1 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+              <span>Door Spike (Filtered)</span>
+            </button>
+            <button onclick="setHomeScenario('breach')" id="pill-breach" class="scenario-pill px-3 py-1 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 border">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              <span>Compressor Stall</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Hero Stat Satellite Pods -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
+          <!-- Pod 1 -->
+          <div class="p-4 rounded-2xl bg-white/70 border border-purple-100/60 shadow-sm hover:border-purple-300 transition">
+            <div class="text-[11px] font-semibold text-slate-500 mb-1">Predictive Lead Time</div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-purple-600 font-mono tracking-tight" id="lead-timer">47:18</div>
+            <div class="text-xs text-slate-600 mt-1 flex items-center space-x-1">
+              <span class="text-emerald-600 font-bold" id="pod-lead-badge">Ahead of breach</span>
+              <span class="text-slate-400">vs. 0s naive</span>
+            </div>
+          </div>
+
+          <!-- Pod 2 -->
+          <div class="p-4 rounded-2xl bg-white/70 border border-purple-100/60 shadow-sm hover:border-sky-300 transition">
+            <div class="text-[11px] font-semibold text-slate-500 mb-1">Core Cabinet Temp</div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono tracking-tight" id="core-temp">4.12 °C</div>
+            <div class="text-xs text-emerald-600 font-semibold mt-1 flex items-center" id="pod-temp-badge">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+              Nominal Homeostasis
+            </div>
+          </div>
+
+          <!-- Pod 3 -->
+          <div class="p-4 rounded-2xl bg-white/70 border border-purple-100/60 shadow-sm hover:border-emerald-300 transition">
+            <div class="text-[11px] font-semibold text-slate-500 mb-1">False Alarm Rejection</div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-emerald-600 font-mono tracking-tight">100%</div>
+            <div class="text-xs text-slate-600 mt-1">42 Door/Defrost spikes filtered</div>
+          </div>
+
+          <!-- Pod 4 -->
+          <div class="p-4 rounded-2xl bg-white/70 border border-purple-100/60 shadow-sm hover:border-indigo-300 transition">
+            <div class="text-[11px] font-semibold text-slate-500 mb-1">Protected Inventory</div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-indigo-600 font-mono tracking-tight">$1.42M</div>
+            <div class="text-xs text-slate-600 mt-1">12 Cryo-storage vaults online</div>
+          </div>
+
+        </div>
+
+        <!-- Interactive Waveform Demonstration Canvas -->
+        <div class="relative w-full rounded-2xl bg-slate-950 p-5 overflow-hidden shadow-inner border border-slate-800">
+          <div class="flex items-center justify-between mb-3 text-xs">
+            <div class="flex items-center space-x-3">
+              <span class="flex items-center space-x-1.5 text-slate-300 font-medium">
+                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span>CryoGuard AI Slope Projection</span>
+              </span>
+              <span class="flex items-center space-x-1.5 text-slate-500 font-medium">
+                <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                <span>Standard Sensor Limit (+8.0°C)</span>
+              </span>
+            </div>
+            <div id="gain-badge" class="flex items-center space-x-2 text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              EARLY WARNING GAIN: +47 MIN
+            </div>
+          </div>
+
+          <canvas id="waveform-canvas" class="w-full h-44 rounded-lg block"></canvas>
+
+          <div class="flex items-center justify-between mt-3 text-[11px] text-slate-400">
+            <span>T-60m (Steady State: 4.1°C)</span>
+            <span class="text-purple-300 font-semibold" id="waveform-trigger-label">T-47m: CryoGuard Triggers Dispatch (4.6°C)</span>
+            <span class="text-rose-400 font-semibold">T+0m: Conventional Alarm Screams (8.1°C - Spoilage Occurs)</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 4. NEW: CONVENTIONAL SENSOR VS CRYOGUARD PARADIGM SHIFT   -->
+    <!-- ======================================================== -->
+    <section class="w-full max-w-5xl mb-24 scroll-reveal">
+      <div class="text-center max-w-2xl mx-auto mb-10">
+        <div class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full gradient-pill mb-3">
+          <span class="text-xs font-bold text-purple-900 tracking-wide uppercase">The Cold-Chain Paradigm Shift</span>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">
+          The Difference Between Disaster and Preservation
+        </h2>
+        <p class="text-sm text-slate-600">
+          Why traditional static-threshold buzzers fail biologics, and how thermodynamic physics changes everything.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Left: Conventional Alarm (The Problem) -->
+        <div class="glass-tile p-8 border-rose-200/70 bg-gradient-to-br from-white/90 to-rose-50/30">
+          <div class="flex items-center justify-between mb-6">
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
+              Legacy Approach
+            </span>
+            <span class="text-xs font-bold text-rose-600">Static Threshold Alarm</span>
+          </div>
+          <h3 class="text-xl font-extrabold text-slate-900 mb-2">The 8.0°C Ambush</h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-6">
+            Only alerts after internal air probes physically breach the 8.0°C upper boundary. By the time someone arrives on-site, lipid nanoparticles have begun hydrolyzing.
+          </p>
+          <div class="space-y-3 pt-4 border-t border-rose-100 text-xs font-medium text-slate-700">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Warning Lead Time:</span>
+              <span class="font-bold text-rose-600">0 Minutes (Post-Breach)</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Nuisance Door Dispatches:</span>
+              <span class="font-bold text-rose-600">~42 False Alarms / Mo</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Direct Financial Spoilage Risk:</span>
+              <span class="font-bold text-rose-600"><span class="font-mono">-$142,800</span> per incident</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: CryoGuard AI (The Solution) -->
+        <div class="glass-tile p-8 border-purple-200/90 bg-gradient-to-br from-white/95 to-purple-50/40 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-purple-200/40 rounded-full filter blur-2xl pointer-events-none"></div>
+          <div class="flex items-center justify-between mb-6 relative z-10">
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200 flex items-center space-x-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>CryoGuard AI</span>
+            </span>
+            <span class="text-xs font-bold text-purple-700">Predictive Thermodynamics</span>
+          </div>
+          <h3 class="text-xl font-extrabold text-slate-900 mb-2 relative z-10">47-Minute Preventive Action</h3>
+          <p class="text-xs text-slate-600 leading-relaxed mb-6 relative z-10">
+            Theil-Sen regression detects micro-thermal heat flux (+0.048 °C/min) at 4.6°C. Clinical staff are paged with plenty of time to execute standard cold-bay transfer.
+          </p>
+          <div class="space-y-3 pt-4 border-t border-purple-100 text-xs font-medium text-slate-700 relative z-10">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Warning Lead Time:</span>
+              <span class="font-bold text-emerald-600"><span class="font-mono">+47 Minutes</span> Guaranteed</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Noise Rejection Filter:</span>
+              <span class="font-bold text-emerald-600"><span class="font-mono">100%</span> Defrost & Door Shield</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-500">Biologics Potency Preserved:</span>
+              <span class="font-bold text-purple-700"><span class="font-mono">100%</span> Potency (<span class="font-mono">$0</span> Loss)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- 5. FOUR PILLARS OF INTELLIGENCE (BENTO TILES)            -->
+    <!-- ======================================================== -->
+    <div class="w-full max-w-5xl mb-24 scroll-reveal">
+
+      <div class="text-center max-w-xl mx-auto mb-10">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+          Architected for Clinical Zero-Tolerance
+        </h2>
+        <p class="text-sm text-slate-600">
+          Four foundational pillars engineered to eliminate both catastrophic excursions and toxic alert fatigue.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Pillar 1 -->
+        <a href="risk.html" class="glass-tile p-7 group block scroll-reveal delay-100">
+          <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+              <polyline points="16 7 22 7 22 13"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-purple-600 transition">
+            Thermodynamic Drift Modeling
+          </h3>
+          <p class="text-sm text-slate-600 leading-relaxed mb-4">
+            Employs robust Theil-Sen regression with a 29.3% breakdown point, detecting persistent micro-thermal drift (+0.048 °C/min) long before air probes register breach.
+          </p>
+          <div class="flex items-center text-xs font-bold text-purple-600 group-hover:translate-x-1 transition-transform">
+            <span>Explore Risk Horizons</span>
+            <svg class="w-3.5 h-3.5 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </a>
+
+        <!-- Pillar 2 -->
+        <a href="events.html" class="glass-tile p-7 group block scroll-reveal delay-200">
+          <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-sky-600 group-hover:text-white transition">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-sky-600 transition">
+            Physics-Based Noise Gate
+          </h3>
+          <p class="text-sm text-slate-600 leading-relaxed mb-4">
+            Distinguishes routine access door spikes (18.4 min thermal buffer) and scheduled evaporator defrost pulses from actual mechanical compressor failure.
+          </p>
+          <div class="flex items-center text-xs font-bold text-sky-600 group-hover:translate-x-1 transition-transform">
+            <span>Inspect Event Signatures</span>
+            <svg class="w-3.5 h-3.5 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </a>
+
+        <!-- Pillar 3 -->
+        <a href="alerts.html" class="glass-tile p-7 group block scroll-reveal delay-300">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-emerald-600 transition">
+            Token-Bucket Policy Engine
+          </h3>
+          <p class="text-sm text-slate-600 leading-relaxed mb-4">
+            Guarantees zero alert fatigue. Strict 3-token dispatch budgeting and dual-threshold hysteresis prevent repeated notification flapping during borderline temperatures.
+          </p>
+          <div class="flex items-center text-xs font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
+            <span>View Escalation Simulator</span>
+            <svg class="w-3.5 h-3.5 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </a>
+
+        <!-- Pillar 4 -->
+        <a href="briefings.html" class="glass-tile p-7 group block scroll-reveal delay-400">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition">
+            AI Flight Surgeon Briefing
+          </h3>
+          <p class="text-sm text-slate-600 leading-relaxed mb-4">
+            Translates raw telemetry into actionable clinical memos: Arrhenius degradation shelf-life impact, specific root cause diagnostics, and WHO PQS compliance certificates.
+          </p>
+          <div class="flex items-center text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
+            <span>Read Clinical Memo</span>
+            <svg class="w-3.5 h-3.5 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </a>
+
+      </div>
+
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 6. NEW: HIGH-VALUATION BIOLOGICS CARGO STRIP             -->
+    <!-- ======================================================== -->
+    <section class="w-full max-w-5xl mb-24 scroll-reveal">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wider text-purple-700">Depot Alpha Cargo Manifest</div>
+          <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">Active Preserved Payloads</h3>
+        </div>
+        <a href="fleet.html" class="text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center space-x-1">
+          <span>View All 12 Fleet Vaults</span>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Payload 1 -->
+        <div class="p-5 rounded-2xl glass-tile border-slate-200/80 hover:border-purple-300">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">Unit A-12</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <div class="font-bold text-slate-900 text-sm mb-1">Moderna Spikevax</div>
+          <div class="text-[11px] text-slate-500 mb-3">mRNA-1273 · 3,400 Doses</div>
+          <div class="text-lg font-extrabold text-slate-900 font-mono mb-1">$142,800</div>
+          <div class="text-[11px] text-emerald-600 font-semibold flex items-center">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+            99.8% Potency Active
+          </div>
+        </div>
+
+        <!-- Payload 2 -->
+        <div class="p-5 rounded-2xl glass-tile border-slate-200/80 hover:border-sky-300">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">ULT Bay 01</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <div class="font-bold text-slate-900 text-sm mb-1">Pfizer Comirnaty</div>
+          <div class="text-[11px] text-slate-500 mb-3">Ultra-Low · 8,200 Doses</div>
+          <div class="text-lg font-extrabold text-slate-900 font-mono mb-1">$328,000</div>
+          <div class="text-[11px] text-sky-600 font-semibold flex items-center">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-500 mr-1.5"></span>
+            -74.2 °C Cryo-Lock
+          </div>
+        </div>
+
+        <!-- Payload 3 -->
+        <div class="p-5 rounded-2xl glass-tile border-slate-200/80 hover:border-indigo-300">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">Unit A-03</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <div class="font-bold text-slate-900 text-sm mb-1">Pediatric M-M-R II</div>
+          <div class="text-[11px] text-slate-500 mb-3">Attenuated · 2,100 Doses</div>
+          <div class="text-lg font-extrabold text-slate-900 font-mono mb-1">$94,500</div>
+          <div class="text-[11px] text-emerald-600 font-semibold flex items-center">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+            100% Viability Stable
+          </div>
+        </div>
+
+        <!-- Payload 4 -->
+        <div class="p-5 rounded-2xl glass-tile border-slate-200/80 hover:border-purple-300">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">Vault 04</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <div class="font-bold text-slate-900 text-sm mb-1">Oncology Antibodies</div>
+          <div class="text-[11px] text-slate-500 mb-3">Pembrolizumab · 680 Vials</div>
+          <div class="text-lg font-extrabold text-slate-900 font-mono mb-1">$840,000</div>
+          <div class="text-[11px] text-emerald-600 font-semibold flex items-center">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+            Nominal 3.9 °C Steady
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- 7. FINAL LAUNCH CTA SECTION                              -->
+    <!-- ======================================================== -->
+    <div class="w-full max-w-5xl glass-tile p-8 sm:p-12 text-center relative overflow-hidden scroll-reveal">
+      <div class="max-w-2xl mx-auto relative z-10">
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
+          Ready to Experience Cold-Chain Autonomy?
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 mb-8 leading-relaxed">
+          Test live thermodynamic scenarios, simulate mechanical compressor failure, or inspect the 12-unit commercial depot fleet in real-time.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-4">
+          <a href="index.html" class="btn-gradient-primary px-8 py-3.5 rounded-2xl text-white font-bold text-sm shadow-xl shadow-purple-500/25 flex items-center space-x-2">
+            <span>Launch Live Monitor</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+          <a href="dashboard.html" class="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm border border-slate-200/90 shadow-sm transition">
+            1080p Presentation Slide Mode [P]
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 8. FOOTER                                  -->
+  <!-- ========================================== -->
+  <footer class="relative z-10 w-full py-8 border-t border-purple-100/60 bg-white/50 backdrop-blur-sm text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="font-semibold text-slate-700">CryoGuard AI</span>
+        <span>· Autonomous Cold-Chain Preservation</span>
+      </div>
+      <div class="flex items-center space-x-5 text-slate-500">
+        <a href="index.html" class="hover:text-purple-600 transition">Live Monitor</a>
+        <a href="risk.html" class="hover:text-purple-600 transition">Risk Horizons</a>
+        <a href="events.html" class="hover:text-purple-600 transition">Event Physics</a>
+        <a href="alerts.html" class="hover:text-purple-600 transition">Policy Engine</a>
+        <a href="briefings.html" class="hover:text-purple-600 transition">Flight Surgeon</a>
+        <a href="fleet.html" class="hover:text-purple-600 transition">Depot Fleet</a>
+      </div>
+      <div>
+        <span>WHO PQS E006 & CDC Compliant</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- 9. SCRIPT: FLUID DYNAMIC KINETICS          -->
+  <!-- ========================================== -->
+  <script>
+    // 1. Mouse Spotlight Tracking
+    const cursorGlow = document.getElementById('cursor-glow');
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let currentX = mouseX;
+    let currentY = mouseY;
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    function updateCursorGlow() {
+      currentX += (mouseX - currentX) * 0.12;
+      currentY += (mouseY - currentY) * 0.12;
+      if (cursorGlow) {
+        cursorGlow.style.left = `${currentX}px`;
+        cursorGlow.style.top = `${currentY}px`;
+      }
+      requestAnimationFrame(updateCursorGlow);
+    }
+    updateCursorGlow();
+
+    // 2. 3D Perspective Tilt on Center Card
+    const tiltCard = document.getElementById('hero-tilt-card');
+    if (tiltCard) {
+      window.addEventListener('mousemove', (e) => {
+        const rect = tiltCard.getBoundingClientRect();
+        const cardCenterX = rect.left + rect.width / 2;
+        const cardCenterY = rect.top + rect.height / 2;
+
+        const deltaX = (e.clientX - cardCenterX) / (window.innerWidth / 2);
+        const deltaY = (e.clientY - cardCenterY) / (window.innerHeight / 2);
+
+        // Limit tilt to max 3.5 degrees for subtle premium feel
+        const rotateX = -deltaY * 3.2;
+        const rotateY = deltaX * 3.2;
+
+        tiltCard.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+      });
+    }
+
+    // 3. Fluid Streamline Particle Simulation (Ambient Canvas)
+    const canvas = document.getElementById('kinetic-canvas');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      initParticles();
+    });
+
+    const particles = [];
+    const PARTICLE_COUNT = 38;
+
+    function initParticles() {
+      particles.length = 0;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.45,
+          vy: (Math.random() - 0.5) * 0.45,
+          radius: Math.random() * 2.2 + 1.2,
+          alpha: Math.random() * 0.4 + 0.15,
+          color: Math.random() > 0.5 ? '124, 58, 237' : '2, 132, 199' // purple or blue
+        });
+      }
+    }
+    initParticles();
+
+    function renderParticles() {
+      ctx.clearRect(0, 0, width, height);
+
+      for (let i = 0; i < particles.length; i++) {
+        const p1 = particles[i];
+        p1.x += p1.vx;
+        p1.y += p1.vy;
+
+        if (p1.x < 0 || p1.x > width) p1.vx *= -1;
+        if (p1.y < 0 || p1.y > height) p1.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p1.x, p1.y, p1.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p1.color}, ${p1.alpha})`;
+        ctx.fill();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          const p2 = particles[j];
+          const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+          if (dist < 150) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `rgba(167, 139, 250, ${(1 - dist / 150) * 0.12})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(renderParticles);
+    }
+    renderParticles();
+
+    // 4. Live Predictive Waveform Canvas with Dynamic Scenarios
+    const waveCanvas = document.getElementById('waveform-canvas');
+    let currentScenario = 'drift'; // 'nominal', 'drift', 'door', 'breach'
+
+    if (waveCanvas) {
+      const wCtx = waveCanvas.getContext('2d');
+      let wWidth = waveCanvas.width = waveCanvas.parentElement.clientWidth;
+      let wHeight = waveCanvas.height = 176;
+
+      window.addEventListener('resize', () => {
+        wWidth = waveCanvas.width = waveCanvas.parentElement.clientWidth;
+        wHeight = waveCanvas.height = 176;
+      });
+
+      let phase = 0;
+
+      function drawWaveform() {
+        wCtx.clearRect(0, 0, wWidth, wHeight);
+
+        // Safe threshold line at +8.0°C
+        const breachY = wHeight * 0.22;
+        wCtx.beginPath();
+        wCtx.setLineDash([6, 6]);
+        wCtx.moveTo(0, breachY);
+        wCtx.lineTo(wWidth, breachY);
+        wCtx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+        wCtx.lineWidth = 1.5;
+        wCtx.stroke();
+        wCtx.setLineDash([]);
+
+        // Grid lines
+        wCtx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+        wCtx.lineWidth = 1;
+        for (let y = 30; y < wHeight; y += 35) {
+          wCtx.beginPath();
+          wCtx.moveTo(0, y);
+          wCtx.lineTo(wWidth, y);
+          wCtx.stroke();
+        }
+
+        const startY = wHeight * 0.70;
+        let triggerX = wWidth * 0.48;
+
+        // Curve equation based on scenario
+        function getCurveY(progress, x) {
+          const ripple = Math.sin(x * 0.04 + phase) * 2;
+          if (currentScenario === 'nominal') {
+            return startY + Math.sin(progress * 8 + phase) * 3;
+          } else if (currentScenario === 'door') {
+            // Door spike with rapid exponential recovery
+            if (progress > 0.3 && progress < 0.6) {
+              const peak = Math.sin((progress - 0.3) / 0.3 * Math.PI) * 28;
+              return startY - peak + ripple;
+            }
+            return startY + ripple;
+          } else if (currentScenario === 'breach') {
+            // Rapid steep runaway
+            return startY - Math.pow(progress, 1.5) * (startY - breachY + 18) + ripple;
+          } else {
+            // Default: predictive drift
+            return startY - Math.pow(progress, 2.2) * (startY - breachY + 8) + ripple;
+          }
+        }
+
+        // Confidence Tunnel
+        const gradient = wCtx.createLinearGradient(0, 0, wWidth, 0);
+        gradient.addColorStop(0, 'rgba(124, 58, 237, 0.05)');
+        gradient.addColorStop(0.5, 'rgba(124, 58, 237, 0.22)');
+        gradient.addColorStop(1, currentScenario === 'breach' ? 'rgba(244, 63, 94, 0.30)' : 'rgba(244, 63, 94, 0.15)');
+
+        wCtx.beginPath();
+        wCtx.moveTo(0, getCurveY(0, 0) + 12);
+        for (let x = 0; x <= wWidth; x += 6) {
+          const progress = x / wWidth;
+          wCtx.lineTo(x, getCurveY(progress, x) + 10);
+        }
+        for (let x = wWidth; x >= 0; x -= 6) {
+          const progress = x / wWidth;
+          wCtx.lineTo(x, getCurveY(progress, x) - 10);
+        }
+        wCtx.closePath();
+        wCtx.fillStyle = gradient;
+        wCtx.fill();
+
+        // Main Forecast Line
+        wCtx.beginPath();
+        wCtx.moveTo(0, getCurveY(0, 0));
+        for (let x = 0; x <= wWidth; x += 4) {
+          const progress = x / wWidth;
+          wCtx.lineTo(x, getCurveY(progress, x));
+        }
+        wCtx.strokeStyle = currentScenario === 'breach' ? '#f43f5e' : '#c084fc';
+        wCtx.lineWidth = 2.5;
+        wCtx.stroke();
+
+        // Trigger Marker
+        if (currentScenario === 'drift' || currentScenario === 'breach') {
+          const markerProgress = triggerX / wWidth;
+          const markerY = getCurveY(markerProgress, triggerX);
+
+          wCtx.beginPath();
+          wCtx.arc(triggerX, markerY, 6, 0, Math.PI * 2);
+          wCtx.fillStyle = currentScenario === 'breach' ? '#f43f5e' : '#a855f7';
+          wCtx.fill();
+          wCtx.lineWidth = 2;
+          wCtx.strokeStyle = '#ffffff';
+          wCtx.stroke();
+
+          wCtx.beginPath();
+          wCtx.arc(triggerX, markerY, 12 + Math.sin(phase * 2) * 3, 0, Math.PI * 2);
+          wCtx.strokeStyle = currentScenario === 'breach' ? 'rgba(244, 63, 94, 0.5)' : 'rgba(168, 85, 247, 0.45)';
+          wCtx.lineWidth = 1.5;
+          wCtx.stroke();
+        }
+
+        // Interactive hover crosshair
+        if (hoverX !== null) {
+          const hoverProgress = Math.min(Math.max(hoverX / wWidth, 0), 1);
+          const currentCurveY = getCurveY(hoverProgress, hoverX);
+          const tempAtPoint = (4.12 + hoverProgress * (currentScenario === 'breach' ? 4.9 : 3.8)).toFixed(2);
+          const minutesAhead = Math.round((1 - hoverProgress) * 60);
+
+          wCtx.beginPath();
+          wCtx.moveTo(hoverX, 0);
+          wCtx.lineTo(hoverX, wHeight);
+          wCtx.strokeStyle = 'rgba(196, 181, 253, 0.4)';
+          wCtx.lineWidth = 1;
+          wCtx.setLineDash([4, 4]);
+          wCtx.stroke();
+          wCtx.setLineDash([]);
+
+          wCtx.beginPath();
+          wCtx.arc(hoverX, currentCurveY, 5, 0, Math.PI * 2);
+          wCtx.fillStyle = '#38bdf8';
+          wCtx.fill();
+          wCtx.strokeStyle = '#ffffff';
+          wCtx.lineWidth = 2;
+          wCtx.stroke();
+
+          const tipText = `T-${minutesAhead}m: ${tempAtPoint} °C`;
+          wCtx.font = '600 11px "JetBrains Mono", monospace';
+          const textWidth = wCtx.measureText(tipText).width;
+          const tipX = Math.min(Math.max(hoverX - textWidth / 2 - 8, 10), wWidth - textWidth - 24);
+          const tipY = Math.max(currentCurveY - 26, 16);
+
+          wCtx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+          wCtx.strokeStyle = 'rgba(124, 58, 237, 0.6)';
+          wCtx.lineWidth = 1;
+          wCtx.beginPath();
+          wCtx.roundRect(tipX, tipY - 14, textWidth + 16, 20, 6);
+          wCtx.fill();
+          wCtx.stroke();
+
+          wCtx.fillStyle = '#ffffff';
+          wCtx.fillText(tipText, tipX + 8, tipY);
+        }
+
+        phase += 0.025;
+        requestAnimationFrame(drawWaveform);
+      }
+
+      let hoverX = null;
+      waveCanvas.addEventListener('mousemove', (e) => {
+        const rect = waveCanvas.getBoundingClientRect();
+        hoverX = e.clientX - rect.left;
+      });
+      waveCanvas.addEventListener('mouseleave', () => {
+        hoverX = null;
+      });
+
+      drawWaveform();
+    }
+
+    // 5. Scenario Switcher Handler
+    window.setHomeScenario = function(scen) {
+      currentScenario = scen;
+      document.querySelectorAll('.scenario-pill').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(`pill-${scen}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const leadTimer = document.getElementById('lead-timer');
+      const coreTemp = document.getElementById('core-temp');
+      const gainBadge = document.getElementById('gain-badge');
+      const triggerLabel = document.getElementById('waveform-trigger-label');
+      const stateDot = document.getElementById('state-dot');
+      const stateTitle = document.getElementById('state-title');
+      const stateSubtitle = document.getElementById('state-subtitle');
+      const podLeadBadge = document.getElementById('pod-lead-badge');
+      const podTempBadge = document.getElementById('pod-temp-badge');
+
+      if (scen === 'nominal') {
+        leadTimer.textContent = 'STEADY';
+        leadTimer.className = 'text-3xl sm:text-4xl font-extrabold text-emerald-600 font-mono tracking-tight';
+        coreTemp.textContent = '4.12 °C';
+        gainBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> ALL SYSTEMS OPTIMAL';
+        gainBadge.className = 'flex items-center space-x-2 text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-800';
+        triggerLabel.textContent = 'Steady State: Zero Drift Detected (Homeostasis)';
+        stateDot.className = 'w-3 h-3 rounded-full bg-emerald-500';
+        stateTitle.textContent = 'THERMAL HOMEOSTASIS · NOMINAL OPERATION';
+        stateSubtitle.textContent = 'Continuous 1 Hz closed-loop telemetry · Slope m = +0.001 °C/min';
+        podLeadBadge.textContent = 'Safe operating band';
+        podTempBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> Nominal Homeostasis';
+      } else if (scen === 'drift') {
+        leadTimer.textContent = '47:18';
+        leadTimer.className = 'text-3xl sm:text-4xl font-extrabold text-purple-600 font-mono tracking-tight';
+        coreTemp.textContent = '4.14 °C';
+        gainBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> EARLY WARNING GAIN: +47 MIN';
+        gainBadge.className = 'flex items-center space-x-2 text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-800';
+        triggerLabel.textContent = 'T-47m: CryoGuard Triggers Dispatch (4.6°C)';
+        stateDot.className = 'w-3 h-3 rounded-full bg-purple-500 animate-pulse';
+        stateTitle.textContent = 'PREDICTIVE DRIFT WATCH · +47 MIN LEAD';
+        stateSubtitle.textContent = 'Theil-Sen regression detects micro-thermal drift (+0.048 °C/min)';
+        podLeadBadge.textContent = 'Ahead of breach';
+        podTempBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5 animate-pulse"></span> Micro-Drift Detected';
+      } else if (scen === 'door') {
+        leadTimer.textContent = 'FILTERED';
+        leadTimer.className = 'text-3xl sm:text-4xl font-extrabold text-sky-600 font-bold tracking-tight';
+        coreTemp.textContent = '4.85 °C';
+        gainBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> FALSE ALARM DEFLECTED';
+        gainBadge.className = 'flex items-center space-x-2 text-[11px] font-bold text-sky-400 bg-sky-950/60 px-2.5 py-0.5 rounded-md border border-sky-800';
+        triggerLabel.textContent = 'Routine Door Spike: Rapid Exponential Decay (Liquid Core Stable)';
+        stateDot.className = 'w-3 h-3 rounded-full bg-sky-500';
+        stateTitle.textContent = 'ACCESS PULSE SUPPRESSED · NOISE FILTERED';
+        stateSubtitle.textContent = 'Physics heuristics reject convection spike (18.4 min thermal lag)';
+        podLeadBadge.textContent = 'Nuisance alarm averted';
+        podTempBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-sky-500 mr-1.5"></span> Vial Core Protected';
+      } else if (scen === 'breach') {
+        leadTimer.textContent = '14:20';
+        leadTimer.className = 'text-3xl sm:text-4xl font-extrabold text-rose-600 font-mono tracking-tight animate-pulse';
+        coreTemp.textContent = '6.42 °C';
+        gainBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span> ACTIVE DISPATCH DISPATCHED';
+        gainBadge.className = 'flex items-center space-x-2 text-[11px] font-bold text-rose-400 bg-rose-950/60 px-2.5 py-0.5 rounded-md border border-rose-800';
+        triggerLabel.textContent = 'T-14m: Critical Emergency Bay Transfer in Progress';
+        stateDot.className = 'w-3 h-3 rounded-full bg-rose-500 animate-pulse';
+        stateTitle.textContent = 'COMPRESSOR STALL · DISPATCH LEVEL 2';
+        stateSubtitle.textContent = 'Active heat runaway detected · Immediate SOP Bay 2 Transfer';
+        podLeadBadge.textContent = 'Intervention window';
+        podTempBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5 animate-pulse"></span> Excursion Imminent';
+      }
+    };
+
+    // 6. Countdown Timer Live Ticker
+    const timerEl = document.getElementById('lead-timer');
+    let secondsLeft = 47 * 60 + 18;
+    setInterval(() => {
+      if (timerEl && currentScenario === 'drift' && secondsLeft > 0) {
+        secondsLeft--;
+        const m = Math.floor(secondsLeft / 60);
+        const s = secondsLeft % 60;
+        timerEl.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+      }
+    }, 1000);
+
+    // 7. Dynamic Subtle Metric Fluctuation
+    const coreTempEl = document.getElementById('core-temp');
+    let baseTemp = 4.12;
+    setInterval(() => {
+      if (coreTempEl && currentScenario === 'drift') {
+        const delta = (Math.random() - 0.5) * 0.02;
+        baseTemp = +(baseTemp + delta).toFixed(2);
+        if (baseTemp < 4.08) baseTemp = 4.08;
+        if (baseTemp > 4.18) baseTemp = 4.18;
+        coreTempEl.textContent = `${baseTemp.toFixed(2)} °C`;
+      }
+    }, 2800);
+
+    // 8. Scroll Reveal IntersectionObserver
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+        }
+      });
+    }, {
+      threshold: 0.12,
+      rootMargin: '0px 0px -40px 0px'
+    });
+    document.querySelectorAll('.scroll-reveal').forEach(el => revealObserver.observe(el));
+
+    // 9. Smooth Seamless Page Exit Links
+    document.querySelectorAll('a[href]').forEach(link => {
+      const href = link.getAttribute('href');
+      if (href && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('http')) {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.body.classList.add('page-exit');
+          setTimeout(() => {
+            window.location.href = href;
+          }, 120);
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

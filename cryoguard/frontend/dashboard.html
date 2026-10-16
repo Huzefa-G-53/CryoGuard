@@ -1,0 +1,3197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryoGuard AI · Predictive Cold-Storage Early-Warning System</title>
+
+  <!-- Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', '"Cascadia Code"', '"Segoe UI Mono"', 'Consolas', 'monospace'],
+          },
+          colors: {
+            themeBg: '#f8faff',
+            purpleAccent: '#7c3aed',
+            purpleLight: '#ede9fe',
+            purpleSubtle: '#f5f3ff',
+            blueAccent: '#0284c7',
+            blueLight: '#e0f2fe',
+            blueSubtle: '#f0f9ff',
+            slateDark: '#0f172a',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    *, *::before, *::after {
+      cursor: inherit;
+    }
+    html, body {
+      cursor: default !important;
+      scroll-behavior: smooth;
+    }
+    a, button, [role="button"], select, input[type="range"], .clickable {
+      cursor: pointer !important;
+    }
+    input[type="text"], input[type="number"] {
+      cursor: text !important;
+    }
+    canvas {
+      cursor: crosshair !important;
+    }
+
+    body {
+      background-color: #f8faff;
+      color: #0f172a;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Ambient Aurora Glow (Shared with events.html & risk.html) */
+    .aurora-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .aurora-orb-1 {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      top: -180px;
+      left: 10%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(196, 181, 253, 0.40) 0%, rgba(237, 233, 254, 0.18) 50%, transparent 75%);
+      filter: blur(85px);
+      animation: floatOrb 22s ease-in-out infinite alternate;
+    }
+    .aurora-orb-2 {
+      position: absolute;
+      width: 650px;
+      height: 650px;
+      top: 60px;
+      right: 8%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(186, 230, 253, 0.45) 0%, rgba(224, 242, 254, 0.16) 50%, transparent 75%);
+      filter: blur(85px);
+      animation: floatOrb 26s ease-in-out infinite alternate-reverse;
+    }
+    .aurora-orb-3 {
+      position: absolute;
+      width: 750px;
+      height: 750px;
+      bottom: -150px;
+      left: 25%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(221, 214, 254, 0.35) 0%, rgba(243, 232, 255, 0.14) 50%, transparent 75%);
+      filter: blur(95px);
+      animation: floatOrb 28s ease-in-out infinite alternate;
+    }
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(45px, 40px) scale(1.08); }
+      100% { transform: translate(-35px, -30px) scale(0.95); }
+    }
+
+    /* Soft modern glass tiles with rounded-3xl and gentle shadows */
+    .tile-card, .glass-tile {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(224, 231, 255, 0.90);
+      border-radius: 1.5rem;
+      box-shadow:
+        0 10px 30px -5px rgba(124, 58, 237, 0.05),
+        0 4px 12px -2px rgba(2, 132, 199, 0.04),
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tile-card:hover, .glass-tile:hover {
+      background: rgba(255, 255, 255, 0.96);
+      border-color: rgba(196, 181, 253, 0.95);
+      transform: translateY(-2px);
+      box-shadow:
+        0 18px 36px -10px rgba(124, 58, 237, 0.10),
+        0 8px 16px -4px rgba(2, 132, 199, 0.05);
+    }
+
+    /* Crisp tabular figures */
+    .font-mono, .num-tabular, code, kbd, samp {
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', Consolas, monospace !important;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Gradient Typography */
+    .gradient-text-shimmer {
+      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 32%, #6d28d9 65%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-lift {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-lift:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 18px -2px rgba(124, 58, 237, 0.18);
+    }
+    .btn-lift:active {
+      transform: translateY(0);
+    }
+
+    /* Clean Snapshot Mode for pitch presentations */
+    body.clean-mode #top-nav-bar,
+    body.clean-mode .no-screenshot {
+      display: none !important;
+    }
+
+    nav {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    nav::-webkit-scrollbar {
+      display: none !important;
+    }
+
+    /* Radial gauge ring */
+    .gauge-bg {
+      stroke: #e2e8f0;
+    }
+    .gauge-progress {
+      transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
+      stroke-linecap: round;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.8);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(196, 181, 253, 0.7);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(124, 58, 237, 0.8);
+    }
+  </style>
+</head>
+<body class="relative min-h-screen flex flex-col antialiased selection:bg-purple-200 selection:text-purple-900">
+
+  <!-- Ambient Light Orbs -->
+  <div class="aurora-bg">
+    <div class="aurora-orb-1"></div>
+    <div class="aurora-orb-2"></div>
+    <div class="aurora-orb-3"></div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 1. NAVIGATION BAR (Spacious, Identical Across All Pages) -->
+  <!-- ======================================================== -->
+  <header id="top-nav-bar" class="sticky top-0 z-30 w-full border-b border-purple-100/60 backdrop-blur-xl bg-white/80 transition-all">
+    <div class="max-w-[1560px] w-full mx-auto px-6 lg:px-10 py-3.5 flex items-center justify-between gap-4 lg:gap-8">
+
+      <!-- Brand Logo -->
+      <a href="home.html" class="flex items-center space-x-3 shrink-0 group">
+        <div class="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-sky-500 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold tracking-tight text-xl text-slate-900 leading-tight">Cryo<span class="text-purple-600">Guard</span></span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100/90 text-purple-800 border border-purple-200">AI</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-medium tracking-tight">Predictive Cold-Storage</span>
+        </div>
+      </a>
+
+      <!-- 7 Navigation Tabs -->
+      <nav class="hidden md:flex items-center space-x-1 lg:space-x-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-purple-100/80 text-xs font-semibold shadow-inner shrink-0">
+        <a href="home.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="index.html" class="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-bold shadow-md shadow-purple-500/25 flex items-center space-x-1.5 whitespace-nowrap transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Live Monitor</span>
+        </a>
+        <a href="risk.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span>Risk Horizons</span>
+        </a>
+        <a href="events.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Event Physics</span>
+        </a>
+        <a href="alerts.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>Policy Engine</span>
+        </a>
+        <a href="briefings.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>Flight Surgeon</span>
+        </a>
+        <a href="fleet.html" class="px-3 py-1.5 rounded-xl text-slate-700 hover:text-purple-700 hover:bg-white/90 whitespace-nowrap transition flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span>Depot Fleet</span>
+        </a>
+      </nav>
+
+      <!-- Right Controls: Sim Tick, Status, Presets, Clean -->
+      <div class="flex items-center space-x-3 text-xs md:text-sm shrink-0 whitespace-nowrap">
+        <!-- Sim Tick Pill -->
+        <div class="hidden xl:flex items-center space-x-2 bg-white/95 px-3 py-1.5 rounded-xl border border-purple-100 text-xs font-mono shadow-xs">
+          <span class="text-slate-400 font-semibold">TICK:</span>
+          <span id="current-sim-time" class="text-purple-700 font-bold">T+000 min</span>
+          <span class="text-slate-300">|</span>
+          <span id="sim-clock" class="text-slate-600 font-medium">14:00:00 UTC</span>
+        </div>
+
+        <!-- Live Python Engine Status Pill -->
+        <div id="backend-status-pill" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-xs">
+          <span id="backend-status-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="backend-status-text">PYTHON: ONLINE (8000)</span>
+        </div>
+
+        <!-- Safe Status Pill -->
+        <div id="status-pill" class="flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
+          <span id="status-pill-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="status-pill-text">STATUS: SAFE [4.2°C]</span>
+        </div>
+
+        <!-- Live Python Lab Launcher -->
+        <button onclick="togglePythonSandbox()" class="btn-lift px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-sky-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-purple-500/25 flex items-center space-x-1.5 whitespace-nowrap">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31L4.35 18.5A2 2 0 0 0 6 22h12a2 2 0 0 0 1.65-3.5L14 9.31V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/></svg>
+          <span>🔬 Live Twin Lab</span>
+        </button>
+
+        <!-- System Guide & Navigation Map Button -->
+        <button onclick="openGuideModal()" class="btn-lift px-3.5 py-2 text-xs font-bold rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 transition flex items-center space-x-1.5 shadow-xs whitespace-nowrap">
+          <svg class="w-3.5 h-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m.08 4h.01"/></svg>
+          <span>System Guide & Map</span>
+        </button>
+
+        <!-- Presets Button -->
+        <button onclick="openPresetsModal()" class="btn-lift px-3.5 py-2 text-xs font-semibold rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-700 hover:text-purple-700 transition flex items-center space-x-1.5 shadow-xs whitespace-nowrap no-screenshot">
+          <svg class="w-3.5 h-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Presets <kbd class="ml-1 text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">[P]</kbd></span>
+        </button>
+
+        <!-- Clean Presentation Mode -->
+        <button onclick="toggleCleanMode()" class="btn-lift px-3.5 py-2 text-xs font-semibold rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-700 hover:text-purple-700 transition flex items-center space-x-1.5 shadow-xs whitespace-nowrap no-screenshot">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Clean <kbd class="ml-1 text-[10px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300 text-slate-600 font-mono">[S]</kbd></span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- 2. MAIN WORKSPACE CONTENT                                -->
+  <!-- ======================================================== -->
+  <main class="flex-1 max-w-[1560px] w-full mx-auto px-6 lg:px-10 py-6 space-y-6 relative z-10">
+
+    <!-- HERO HEADER CARD / QUICK TELEMETRY STRIP -->
+    <div class="tile-card p-7 bg-gradient-to-r from-white via-purple-50/30 to-sky-50/30 border-l-4 border-l-purple-600 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      <div>
+        <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-purple-600 mb-2 font-mono">
+          <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200/80">Predictive Thermodynamics</span>
+          <span>•</span>
+          <span class="text-sky-700 font-bold">1-Min Grey-Box Physics Cadence</span>
+        </div>
+        <h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight gradient-text-shimmer">
+          Live Trajectory Monitor & Horizon Projections
+        </h1>
+        <p class="text-sm md:text-base text-slate-600 mt-2 max-w-2xl leading-relaxed">
+          Real-time cold-chain trajectory modeling, Grey-Box Newton cooling residuals, and Theil-Sen drift forecasting across 15m, 30m, 60m, and 120m excursion risk horizons.
+        </p>
+      </div>
+
+      <!-- Quick Metrics Strip (Air, Vial, Slope, Compressor, Door) -->
+      <div class="flex flex-wrap items-center gap-3 font-mono shrink-0">
+        <div class="bg-white/95 p-3.5 px-4 rounded-2xl border border-purple-100 shadow-sm text-center min-w-[120px]">
+          <span class="text-[11px] text-slate-500 font-extrabold uppercase block tracking-wider mb-0.5">Cabinet Air</span>
+          <span class="text-3xl font-black text-purple-700 num-tabular tracking-tight" id="chart-live-temp">4.52°C</span>
+        </div>
+        <div class="bg-white/95 p-3.5 px-4 rounded-2xl border border-purple-100 shadow-sm text-center min-w-[120px]">
+          <span class="text-[11px] text-slate-500 font-extrabold uppercase block tracking-wider mb-0.5">Vial Core</span>
+          <span class="text-2xl font-black text-emerald-600 num-tabular tracking-tight" id="chart-vial-temp">4.50°C</span>
+        </div>
+        <div class="bg-white/95 p-3.5 px-4 rounded-2xl border border-purple-100 shadow-sm text-center min-w-[120px]">
+          <span class="text-[11px] text-slate-500 font-extrabold uppercase block tracking-wider mb-0.5">Drift Slope</span>
+          <span class="text-2xl font-black text-slate-800 num-tabular tracking-tight" id="chart-live-slope">+0.000°C/m</span>
+        </div>
+        <div class="bg-white/95 p-3.5 px-4 rounded-2xl border border-purple-100 shadow-sm text-center min-w-[120px]">
+          <span class="text-[11px] text-slate-500 font-extrabold uppercase block tracking-wider mb-0.5">Compressor</span>
+          <span class="text-sm font-black text-emerald-600 flex items-center justify-center mt-2" id="chart-comp-state">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>ACTIVE
+          </span>
+        </div>
+        <div class="bg-white/95 p-3.5 px-4 rounded-2xl border border-purple-100 shadow-sm text-center min-w-[120px]">
+          <span class="text-[11px] text-slate-500 font-extrabold uppercase block tracking-wider mb-0.5">Door Contact</span>
+          <span class="text-sm font-black text-emerald-600 flex items-center justify-center mt-2" id="chart-door-state">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>CLOSED
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MINIMAL SCENARIO & REPLAY CONTROLS TOOLBAR -->
+    <div class="tile-card p-3.5 px-5 flex flex-wrap items-center justify-between gap-4">
+
+      <!-- Scenario Selection Buttons (Clear descriptive badges) -->
+      <div class="flex items-center space-x-1.5 overflow-x-auto py-0.5">
+        <span class="text-slate-400 font-bold uppercase tracking-wider text-[11px] mr-1 hidden sm:inline">Scenarios:</span>
+        <button onclick="selectScenario('normal')" id="btn-scen-normal" class="btn-lift px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-md shadow-purple-500/25 transition whitespace-nowrap">
+          1. Normal
+        </button>
+        <button onclick="selectScenario('door_opening')" id="btn-scen-door_opening" class="btn-lift px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 border border-purple-100 hover:border-purple-300 hover:text-purple-700 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>2. Door Opening</span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Filter Spike</span>
+        </button>
+        <button onclick="selectScenario('defrost_cycle')" id="btn-scen-defrost_cycle" class="btn-lift px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 border border-purple-100 hover:border-purple-300 hover:text-purple-700 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>3. Coil Defrost</span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Filter Cycle</span>
+        </button>
+        <button onclick="selectScenario('sensor_spike')" id="btn-scen-sensor_spike" class="btn-lift px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 border border-purple-100 hover:border-purple-300 hover:text-purple-700 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>4. Sensor Glitch</span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Filter Noise</span>
+        </button>
+        <button onclick="selectScenario('gradual_drift')" id="btn-scen-gradual_drift" class="btn-lift px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 border border-purple-100 hover:border-purple-300 hover:text-purple-700 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>5. Refrigerant Leak</span>
+          <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">47m Lead</span>
+        </button>
+        <button onclick="selectScenario('sudden_failure')" id="btn-scen-sudden_failure" class="btn-lift px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 border border-purple-100 hover:border-purple-300 hover:text-purple-700 transition whitespace-nowrap flex items-center space-x-1.5">
+          <span>6. Compressor Stall</span>
+          <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">Critical</span>
+        </button>
+      </div>
+
+      <!-- Play, Speed, Slider, Reset Controls -->
+      <div class="flex items-center space-x-3 shrink-0 ml-auto">
+        <!-- Play / Pause Button -->
+        <button id="btn-play-pause" onclick="togglePlayPause()" class="btn-lift px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-purple-500/25 transition whitespace-nowrap">
+          <span id="play-pause-icon">▶</span>
+          <span id="play-pause-text">PLAY</span>
+        </button>
+
+        <!-- Speed selector -->
+        <div class="flex items-center bg-slate-100 border border-purple-100 rounded-xl overflow-hidden font-mono text-xs">
+          <button onclick="setSpeed(1)" id="btn-spd-1" class="px-2.5 py-1 bg-purple-600 text-white font-bold">1x</button>
+          <button onclick="setSpeed(5)" id="btn-spd-5" class="px-2.5 py-1 text-slate-600 hover:text-purple-700 font-bold">5x</button>
+          <button onclick="setSpeed(20)" id="btn-spd-20" class="px-2.5 py-1 text-slate-600 hover:text-purple-700 font-bold">20x</button>
+        </div>
+
+        <!-- Scrubber slider -->
+        <div class="flex items-center space-x-2">
+          <input type="range" id="time-slider" min="0" max="239" value="0" oninput="onSliderChange(this.value)" class="w-28 sm:w-36 accent-purple-600 cursor-pointer">
+          <span id="slider-val" class="font-mono text-slate-600 text-xs w-12 num-tabular font-bold">T+0</span>
+        </div>
+
+        <!-- Reset -->
+        <button onclick="resetReplay()" class="btn-lift px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-purple-100 font-mono text-xs font-semibold transition whitespace-nowrap">
+          Reset
+        </button>
+      </div>
+
+    </div>
+
+    <!-- DYNAMIC SCENARIO EXPLAINER & QUICK JUMP ACTION CARD -->
+    <div id="scenario-explainer-card" class="tile-card p-5 bg-gradient-to-r from-purple-50/40 via-white to-sky-50/40 border border-purple-200/80 shadow-sm transition-all duration-300">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+
+        <div class="space-y-1.5 max-w-3xl">
+          <div class="flex items-center space-x-2">
+            <span id="explainer-badge" class="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+              Scenario 1 · Baseline Homeostasis
+            </span>
+            <span class="text-xs font-medium text-slate-300">|</span>
+            <span id="explainer-status-tag" class="text-xs font-bold text-emerald-600 flex items-center">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>Homeostasis Verified
+            </span>
+          </div>
+
+          <h3 id="explainer-title" class="text-base font-extrabold text-slate-900 tracking-tight">
+            Optimal Cold-Chain Cycling (2.0°C – 8.0°C Safety Equilibrium)
+          </h3>
+
+          <p id="explainer-desc" class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            The refrigeration compressor cycles every 24 minutes to maintain safe liquid storage. No anomalies detected. Try testing <strong class="text-purple-700 font-semibold">Scenario 2 (Door Opening)</strong> or <strong class="text-purple-700 font-semibold">Scenario 5 (Refrigerant Leak)</strong> to observe CryoGuard's physics intelligence!
+          </p>
+
+          <!-- Dual System Comparison Note -->
+          <div class="pt-1.5 flex flex-wrap items-center gap-3 text-xs">
+            <div class="flex items-center space-x-1.5 bg-white/90 px-2.5 py-1 rounded-lg border border-slate-200">
+              <span class="font-bold text-slate-700">Conventional System:</span>
+              <span id="explainer-legacy" class="text-slate-500">Silent (within static 2–8°C limit)</span>
+            </div>
+            <div class="flex items-center space-x-1.5 bg-purple-50/90 px-2.5 py-1 rounded-lg border border-purple-200">
+              <span class="font-bold text-purple-900">CryoGuard AI:</span>
+              <span id="explainer-cryoguard" class="text-purple-700 font-semibold">Continuous Grey-Box residual tracking · 0 alarms</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jump to Event Action Button -->
+        <div class="shrink-0 flex flex-col items-start md:items-end gap-2 w-full md:w-auto pt-2 md:pt-0 border-t md:border-t-0 border-purple-100">
+          <button id="btn-jump-event" onclick="jumpToScenarioEvent()" class="btn-lift w-full md:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-white text-purple-700 hover:bg-purple-600 hover:text-white border border-purple-300 hover:border-purple-600 shadow-sm transition flex items-center justify-center space-x-2">
+            <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span id="btn-jump-text">Reset to T+0m (Baseline)</span>
+          </button>
+          <span class="text-[11px] text-slate-400 font-medium">Or press <kbd class="px-1.5 py-0.5 rounded bg-slate-100 border text-slate-600 font-mono font-bold">Space</kbd> to Play / Pause</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 4 MINIMAL KPI TILES (Matching events.html exactly) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+      <!-- Card 1 -->
+      <div class="tile-card p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>FALSE ALARMS AVOIDED</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-[11px]">100% Precision</span>
+        </div>
+        <div class="my-1">
+          <div class="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight font-mono" id="kpi-false-alarms">3 / 3</div>
+          <div class="text-xs font-semibold text-emerald-700 mt-1">Operational Spikes Deflected</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          Zero nuisance technician dispatches over 30 days
+        </p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="tile-card p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>EARLY WARNING LEAD</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-semibold text-[11px]">Action Window</span>
+        </div>
+        <div class="my-1">
+          <div class="text-3xl lg:text-4xl font-black text-purple-700 tracking-tight font-mono" id="kpi-lead-time">47 <span class="text-xl font-bold font-sans text-slate-500">min</span></div>
+          <div class="text-xs font-semibold text-purple-700 mt-1">Before 8.0°C Critical Breach</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          Sufficient lead for cold-bay transfer protocol
+        </p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="tile-card p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>BIOLOGICS VALUE</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-semibold text-[11px]">mRNA Lot #9021</span>
+        </div>
+        <div class="my-1">
+          <div class="text-3xl lg:text-4xl font-black text-sky-700 tracking-tight font-mono" id="kpi-biologics">$48,200</div>
+          <div class="text-xs font-semibold text-sky-700 mt-1">Protected Inventory Potency</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          100% biological molecular potency preserved
+        </p>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="tile-card p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>DEPOT COVERAGE</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-semibold text-[11px]">100% Online</span>
+        </div>
+        <div class="my-1">
+          <div class="text-3xl lg:text-4xl font-black text-indigo-700 tracking-tight font-mono" id="kpi-depot">12 <span class="text-xl font-bold font-sans text-slate-500">Units</span></div>
+          <div class="text-xs font-semibold text-indigo-700 mt-1">Depot Alpha Vaults Active</div>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">
+          Multi-unit continuous digital twin telemetry
+        </p>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 2.5 LIVE PYTHON DIGITAL TWIN TESTBENCH & CUSTOM TELEMETRY SANDBOX        -->
+    <!-- ========================================================================= -->
+    <div id="python-sandbox-card" class="tile-card p-6 lg:p-8 bg-gradient-to-br from-white via-purple-50/20 to-sky-50/25 border-2 border-purple-200/90 shadow-xl shadow-purple-500/5 relative overflow-hidden transition-all duration-300">
+
+      <!-- Ambient decorative glow in background -->
+      <div class="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-purple-400/10 filter blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-sky-400/10 filter blur-3xl pointer-events-none"></div>
+
+      <!-- Sandbox Header & Status -->
+      <div class="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-5 border-b border-purple-100">
+        <div>
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-purple-600 text-white shadow-sm flex items-center space-x-1.5">
+              <span>🔬 Python Backend Lab</span>
+            </span>
+            <span id="sb-conn-badge" class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>FastAPI Server Connected: 127.0.0.1:8000</span>
+            </span>
+            <span class="hidden sm:inline-flex px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+              ODE: C·dT/dt = UA(Tamb - T) + Pload + Pdoor - Pcool·u
+            </span>
+          </div>
+          <h2 class="text-2xl font-black text-slate-900 tracking-tight">
+            Digital Twin Dynamic Testbench & Arbitrary Telemetry Sandbox
+          </h2>
+          <p class="text-xs md:text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
+            Directly test arbitrary sensor states, custom temperatures, prolonged door holds, or paste external batch CSV time-series. Every parameter is evaluated in real time by the live Python thermodynamics model with 95% confidence cones.
+          </p>
+        </div>
+
+        <!-- Mode Navigation Tabs & Toggle -->
+        <div class="flex items-center space-x-2 shrink-0">
+          <div class="flex items-center p-1 bg-slate-100 rounded-xl border border-purple-100 text-xs font-bold">
+            <button onclick="switchSandboxTab('synth')" id="sb-tab-btn-synth" class="px-3.5 py-1.5 rounded-lg bg-white text-purple-700 shadow-sm transition">
+              🎛️ Live Synthesizer
+            </button>
+            <button onclick="switchSandboxTab('batch')" id="sb-tab-btn-batch" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-purple-700 transition">
+              📊 Batch CSV Lab
+            </button>
+            <button onclick="switchSandboxTab('stream')" id="sb-tab-btn-stream" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-purple-700 transition">
+              📡 Server Streamer
+            </button>
+          </div>
+          <button onclick="toggleSandboxCollapse()" id="sb-collapse-btn" class="p-2 rounded-xl bg-white hover:bg-slate-50 border border-purple-100 text-slate-500 hover:text-purple-700 transition" title="Collapse / Expand">
+            <svg id="sb-collapse-icon" class="w-4 h-4 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- SANDBOX BODY (Collapsible Container) -->
+      <div id="sb-body-content" class="relative z-10 pt-6 space-y-6">
+
+        <!-- TAB 1: LIVE PARAMETER SYNTHESIZER -->
+        <div id="sb-tab-synth" class="space-y-6">
+
+          <!-- Quick Preset Pills for Judges -->
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">Fault Presets:</span>
+            <button onclick="applySandboxPreset('leak')" class="btn-lift px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 shadow-xs flex items-center space-x-1.5">
+              <span>💧 Refrigerant Micro-Leak (Hero)</span>
+            </button>
+            <button onclick="applySandboxPreset('door')" class="btn-lift px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 shadow-xs flex items-center space-x-1.5">
+              <span>🚪 Restocking Door Hold (4m)</span>
+            </button>
+            <button onclick="applySandboxPreset('failure')" class="btn-lift px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 shadow-xs flex items-center space-x-1.5">
+              <span>⚡ Compressor Power Blowout</span>
+            </button>
+            <button onclick="applySandboxPreset('heatwave')" class="btn-lift px-3 py-1.5 rounded-xl text-xs font-bold bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200 shadow-xs flex items-center space-x-1.5">
+              <span>☀️ Tropical Heatwave (39.5°C Ambient)</span>
+            </button>
+            <button onclick="applySandboxPreset('normal')" class="btn-lift px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 shadow-xs flex items-center space-x-1.5">
+              <span>✅ WHO Nominal Setpoint (4.1°C)</span>
+            </button>
+          </div>
+
+          <!-- 3-Column Interactive Layout: Inputs (Col 1 & 2) vs Python Live Diagnostics (Col 3) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Column 1: Thermal & Ambient Inputs (4 cols) -->
+            <div class="lg:col-span-4 bg-white/90 p-5 rounded-2xl border border-purple-100 shadow-xs space-y-4">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-700 font-mono">1. Thermal Environment</span>
+                <span class="text-[11px] text-slate-400">Continuous Inputs</span>
+              </div>
+
+              <!-- Unit Identifier -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Cold Storage Unit ID</label>
+                <input type="text" id="sb-unit" value="Unit-02 (Bay 1)" class="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 border border-slate-200 focus:border-purple-500 focus:outline-none">
+              </div>
+
+              <!-- Storage Compartment Temperature -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-bold text-slate-700">Storage Temp (°C)</label>
+                  <span id="sb-temp-badge" class="font-mono text-xs font-black px-2 py-0.5 rounded-md bg-purple-100 text-purple-800">5.80°C</span>
+                </div>
+                <input type="range" id="sb-temp-slider" min="-10.0" max="25.0" step="0.1" value="5.8" oninput="syncSbTemp(this.value)" class="w-full accent-purple-600 cursor-pointer">
+                <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mt-0.5">
+                  <span>-10°C</span>
+                  <span class="text-emerald-600 font-bold">2.0°C – 8.0°C Safe</span>
+                  <span>+25°C</span>
+                </div>
+              </div>
+
+              <!-- Ambient Room Temperature -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-bold text-slate-700">Ambient Room Temp (°C)</label>
+                  <span id="sb-ambient-badge" class="font-mono text-xs font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">24.50°C</span>
+                </div>
+                <input type="range" id="sb-ambient-slider" min="10.0" max="45.0" step="0.5" value="24.5" oninput="syncSbAmbient(this.value)" class="w-full accent-indigo-600 cursor-pointer">
+                <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mt-0.5">
+                  <span>10°C (Chilled Depot)</span>
+                  <span>45°C (Extreme Sahara)</span>
+                </div>
+              </div>
+
+              <!-- Evaporator Coil Temp -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-bold text-slate-700">Evaporator Coil Temp (°C)</label>
+                  <span id="sb-evap-badge" class="font-mono text-xs font-bold text-slate-600">-2.50°C</span>
+                </div>
+                <input type="number" id="sb-evap-input" step="0.5" value="-2.5" oninput="document.getElementById('sb-evap-badge').innerText = parseFloat(this.value).toFixed(2)+'°C'" class="w-full px-3 py-1.5 text-xs font-mono font-semibold rounded-xl bg-slate-50 border border-slate-200">
+              </div>
+            </div>
+
+            <!-- Column 2: Mechanical & Electrical State (4 cols) -->
+            <div class="lg:col-span-4 bg-white/90 p-5 rounded-2xl border border-purple-100 shadow-xs space-y-4">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-700 font-mono">2. Mechanical Actuation</span>
+                <span class="text-[11px] text-slate-400">Physical Actuators</span>
+              </div>
+
+              <!-- Door Open / Closed Switch -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Door Contact Status</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button type="button" onclick="setSbDoor(0)" id="sb-btn-door-closed" class="py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition">
+                    CLOSED (0)
+                  </button>
+                  <button type="button" onclick="setSbDoor(1)" id="sb-btn-door-open" class="py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition">
+                    OPEN (1)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Door Open Duration in Seconds -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-bold text-slate-700">Open Duration (Seconds)</label>
+                  <span id="sb-door-dur-badge" class="font-mono text-xs font-bold text-slate-600">0s</span>
+                </div>
+                <input type="range" id="sb-door-dur-slider" min="0" max="600" step="15" value="0" oninput="syncSbDoorDur(this.value)" class="w-full accent-amber-500 cursor-pointer">
+                <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mt-0.5">
+                  <span>0s</span>
+                  <span class="text-amber-600 font-bold">180s Warning</span>
+                  <span>600s Critical</span>
+                </div>
+              </div>
+
+              <!-- Compressor On/Off Switch -->
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Compressor Operating State</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button type="button" onclick="setSbComp(1)" id="sb-btn-comp-on" class="py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition">
+                    ACTIVE (1)
+                  </button>
+                  <button type="button" onclick="setSbComp(0)" id="sb-btn-comp-off" class="py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition">
+                    STANDBY (0)
+                  </button>
+                </div>
+              </div>
+
+              <!-- 15-Minute Duty Cycle & Current -->
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-[11px] font-bold text-slate-700">Duty Cycle</label>
+                    <span id="sb-duty-badge" class="font-mono text-[11px] font-bold text-purple-700">85%</span>
+                  </div>
+                  <input type="range" id="sb-duty-slider" min="0" max="100" step="5" value="85" oninput="document.getElementById('sb-duty-badge').innerText = this.value+'%'" class="w-full accent-purple-600 cursor-pointer">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 mb-1">Current (Amps)</label>
+                  <input type="number" id="sb-current-input" step="0.1" value="2.6" class="w-full px-2.5 py-1 text-xs font-mono font-semibold rounded-xl bg-slate-50 border border-slate-200">
+                </div>
+              </div>
+
+              <!-- Primary Action Button -->
+              <button onclick="evaluateCustomTelemetry()" id="sb-eval-btn" class="w-full py-3 px-4 rounded-xl font-extrabold text-xs uppercase tracking-wider text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-sky-600 hover:from-purple-700 hover:to-indigo-700 shadow-md shadow-purple-500/25 flex items-center justify-center space-x-2 transition btn-lift">
+                <svg class="w-4 h-4 text-white animate-spin hidden" id="sb-eval-spinner" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <span id="sb-eval-btn-text">⚡ Run Python Digital Twin (POST /api/predict)</span>
+              </button>
+            </div>
+
+            <!-- Column 3: Live Python Evaluated Outputs (4 cols) -->
+            <div class="lg:col-span-4 bg-gradient-to-br from-purple-900 via-indigo-950 to-slate-950 text-white p-5 rounded-2xl shadow-lg border border-purple-800/60 flex flex-col justify-between space-y-4">
+
+              <div>
+                <div class="flex items-center justify-between pb-2 border-b border-purple-800/80">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-purple-200 font-mono">Python Evaluation</span>
+                  </div>
+                  <span id="sb-out-latency" class="font-mono text-[11px] text-purple-300 font-semibold">12ms response</span>
+                </div>
+
+                <!-- Primary Computed Metrics -->
+                <div class="grid grid-cols-2 gap-3 mt-3 font-mono">
+                  <div class="bg-white/10 p-2.5 rounded-xl border border-white/10">
+                    <span class="text-[10px] text-purple-200 block uppercase font-medium">Physics Residual r(t)</span>
+                    <span id="sb-out-residual" class="text-lg font-black text-emerald-300 num-tabular">+0.000 °C/m</span>
+                  </div>
+                  <div class="bg-white/10 p-2.5 rounded-xl border border-white/10">
+                    <span class="text-[10px] text-purple-200 block uppercase font-medium">Digital Twin Health</span>
+                    <div class="flex items-baseline space-x-1.5">
+                      <span id="sb-out-health" class="text-lg font-black text-emerald-300 num-tabular">100%</span>
+                      <span id="sb-out-health-sub" class="text-[10px] font-mono text-purple-300">(0.000 drift)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Parameter Drift Summary -->
+                <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 mt-3 text-xs">
+                  <div class="flex items-center justify-between text-purple-200 text-[11px]">
+                    <span>Cooling Power Drift (ΔPcool):</span>
+                    <span id="sb-out-drift-cool" class="font-mono font-bold text-rose-300">-0.32 °C/min</span>
+                  </div>
+                  <div class="flex items-center justify-between text-purple-200 text-[11px] mt-1">
+                    <span>Insulation Leak Drift (ΔUA):</span>
+                    <span id="sb-out-drift-ua" class="font-mono font-bold text-amber-300">+0.25 W/°C</span>
+                  </div>
+                </div>
+
+                <!-- Multi-Horizon Gaussian Risk Grid -->
+                <div class="mt-3">
+                  <span class="text-[10px] uppercase font-bold text-purple-300 block mb-1">Gaussian Horizon Excursion Probabilities:</span>
+                  <div class="grid grid-cols-4 gap-1.5 font-mono text-center">
+                    <div class="bg-white/10 p-1.5 rounded-lg border border-white/10">
+                      <span class="text-[9px] text-purple-300 block">15m</span>
+                      <span id="sb-out-r15" class="text-xs font-black text-white">4%</span>
+                    </div>
+                    <div class="bg-white/10 p-1.5 rounded-lg border border-white/10">
+                      <span class="text-[9px] text-purple-300 block">30m</span>
+                      <span id="sb-out-r30" class="text-xs font-black text-amber-300">38%</span>
+                    </div>
+                    <div class="bg-white/10 p-1.5 rounded-lg border border-white/10">
+                      <span class="text-[9px] text-purple-300 block">60m</span>
+                      <span id="sb-out-r60" class="text-xs font-black text-rose-300">85%</span>
+                    </div>
+                    <div class="bg-white/10 p-1.5 rounded-lg border border-white/10">
+                      <span class="text-[9px] text-purple-300 block">120m</span>
+                      <span id="sb-out-r120" class="text-xs font-black text-rose-400">99%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Point of No Return & Door Guidance -->
+                <div class="mt-3 bg-white/10 p-2.5 rounded-xl border border-white/15">
+                  <div class="flex items-center justify-between">
+                    <span id="sb-out-tier" class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-rose-500/80 text-white">
+                      TIER 3 CRITICAL
+                    </span>
+                    <span id="sb-out-breach" class="text-xs font-mono font-black text-rose-300">Breach in 2.0m</span>
+                  </div>
+                  <p id="sb-out-instruction" class="text-xs text-purple-100 mt-1.5 leading-snug">
+                    CRITICAL: Door open exceeded safe threshold! Close immediately.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Overlay Action Button -->
+              <div class="pt-2">
+                <button onclick="plotCustomOnHeroChart()" class="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-500/25 btn-lift">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                  <span>📈 Inject & Overlay Trajectory on Hero Chart</span>
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Raw JSON Accordion -->
+          <div class="bg-slate-50 border border-purple-100 rounded-2xl overflow-hidden">
+            <button onclick="toggleJsonDrawer()" class="w-full px-4 py-2.5 flex items-center justify-between text-xs font-bold text-slate-700 hover:bg-purple-50/50 transition">
+              <span class="flex items-center space-x-2">
+                <span class="font-mono text-purple-600">{ }</span>
+                <span>View Raw HTTP Response Payload (FastAPI `/api/predict`)</span>
+              </span>
+              <span id="sb-json-arrow" class="font-mono text-slate-400">▼ Expand</span>
+            </button>
+            <div id="sb-json-drawer" class="hidden p-4 bg-slate-900 border-t border-slate-800">
+              <pre id="sb-raw-json" class="text-[11px] font-mono text-emerald-400 overflow-x-auto max-h-60 selection:bg-purple-700"></pre>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TAB 2: BATCH CSV & CUSTOM DATA IMPORTER -->
+        <div id="sb-tab-batch" class="hidden space-y-4">
+          <div class="bg-white p-5 rounded-2xl border border-purple-100 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h4 class="text-sm font-bold text-slate-900">Batch Custom Telemetry Ingestion (`POST /api/batch-predict`)</h4>
+                <p class="text-xs text-slate-500">Paste arbitrary CSV records (timestamp, temp_fridge_c, ambient_temp_c, door_open, compressor_state) to test bulk model resilience.</p>
+              </div>
+              <!-- Preload Sample Traces -->
+              <div class="flex items-center space-x-2">
+                <button onclick="loadBatchSample('refrigerant_leak')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition">
+                  Sample: Leak Trace
+                </button>
+                <button onclick="loadBatchSample('door_restock')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition">
+                  Sample: Door Spike
+                </button>
+                <button onclick="loadBatchSample('nominal')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition">
+                  Sample: Nominal
+                </button>
+              </div>
+            </div>
+
+            <!-- CSV Textarea -->
+            <textarea id="sb-batch-input" rows="6" class="w-full p-3 font-mono text-xs rounded-xl bg-slate-50 border border-slate-200 focus:border-purple-500 focus:outline-none text-slate-800"></textarea>
+
+            <!-- Action Button -->
+            <div class="flex items-center justify-between pt-2">
+              <span class="text-xs text-slate-500 font-mono" id="sb-batch-status">Ready to evaluate batch telemetry.</span>
+              <button onclick="runBatchPrediction()" id="sb-batch-btn" class="btn-lift px-5 py-2.5 rounded-xl font-bold text-xs bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/25 flex items-center space-x-2 transition">
+                <span>🚀 Run Batch Physics Evaluation</span>
+              </button>
+            </div>
+
+            <!-- Batch Results Table (Hidden initially) -->
+            <div id="sb-batch-results-wrap" class="hidden pt-4 border-t border-slate-100 space-y-3">
+              <div class="grid grid-cols-3 gap-3 font-mono">
+                <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 text-center">
+                  <span class="text-[10px] text-purple-600 font-bold uppercase block">Readings Evaluated</span>
+                  <span id="sb-batch-count" class="text-xl font-black text-purple-900">0</span>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-center">
+                  <span class="text-[10px] text-amber-700 font-bold uppercase block">Peak Temperature</span>
+                  <span id="sb-batch-max-temp" class="text-xl font-black text-amber-900">0.0°C</span>
+                </div>
+                <div class="bg-rose-50 p-3 rounded-xl border border-rose-200 text-center">
+                  <span class="text-[10px] text-rose-700 font-bold uppercase block">Critical Threshold Excursions</span>
+                  <span id="sb-batch-crit-count" class="text-xl font-black text-rose-900">0</span>
+                </div>
+              </div>
+
+              <!-- Mini table -->
+              <div class="max-h-48 overflow-y-auto rounded-xl border border-slate-200">
+                <table class="w-full text-left text-xs font-mono">
+                  <thead class="bg-slate-100 text-slate-600 text-[11px] sticky top-0">
+                    <tr>
+                      <th class="p-2">#</th>
+                      <th class="p-2">Temp (°C)</th>
+                      <th class="p-2">Ambient (°C)</th>
+                      <th class="p-2">Residual r(t)</th>
+                      <th class="p-2">30m Risk</th>
+                      <th class="p-2">Risk Level</th>
+                      <th class="p-2">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sb-batch-table-body" class="divide-y divide-slate-100 text-slate-800"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TAB 3: SERVER-DRIVEN STREAMER -->
+        <div id="sb-tab-stream" class="hidden space-y-4">
+          <div class="bg-white p-5 rounded-2xl border border-purple-100 space-y-3">
+            <h4 class="text-sm font-bold text-slate-900">FastAPI Live Stream Orchestrator (`/api/replay/tick`)</h4>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              When Live Stream mode is toggled, dashboard ticks are pulled directly over HTTP from FastAPI's mathematical state machine rather than generated client-side. This ensures full parity between backend telemetry models and UI charts.
+            </p>
+            <div class="flex items-center space-x-3 pt-2">
+              <button onclick="toggleServerStream()" id="sb-stream-toggle-btn" class="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white transition flex items-center space-x-2">
+                <span id="sb-stream-toggle-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="sb-stream-toggle-text">Active Stream: Python Server-Driven</span>
+              </button>
+              <button onclick="resetServerStream()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                Rewind Server Simulation (/api/replay/reset)
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- MAIN TWO-COLUMN WORKBENCH (7 Cols Left, 5 Cols Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- ===================================================== -->
+      <!-- LEFT COLUMN: TRAJECTORY CHART & INTEGRATED BANNERS   -->
+      <!-- ===================================================== -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- HERO CHART CARD -->
+        <div class="tile-card p-6 flex flex-col relative">
+
+          <!-- Chart Header -->
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex items-center space-x-3">
+              <span class="w-3.5 h-3.5 rounded-lg bg-purple-600 shadow-sm shadow-purple-400"></span>
+              <h2 class="font-extrabold text-base tracking-tight text-slate-900">
+                Real-Time Trajectory & Horizon Projection
+              </h2>
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-bold border border-purple-200/80">
+                240-Min Window
+              </span>
+            </div>
+
+            <div class="text-xs text-slate-500 font-medium hidden sm:inline">
+              1-min Cadence · Theil-Sen Robust Trajectory
+            </div>
+          </div>
+
+          <!-- PREDICTIVE ALERT BANNER (Early Warning) -->
+          <div id="predictive-alert-banner" class="hidden mb-4 p-4 rounded-2xl border border-amber-200 bg-amber-50/90 flex items-center justify-between text-sm transition-all duration-300 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-base shadow-sm">
+                !
+              </div>
+              <div>
+                <span id="banner-title" class="font-extrabold uppercase tracking-wider text-amber-900 text-xs">EARLY WARNING ALERT:</span>
+                <span id="banner-message" class="ml-2 text-slate-800 text-xs md:text-sm font-medium">Trajectory models project critical 8.0°C threshold breach in 47 minutes.</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+              <span class="px-3 py-1 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold font-mono" id="banner-lead-time">Lead: 47m</span>
+            </div>
+          </div>
+
+          <!-- CRITICAL EXCURSION BANNER -->
+          <div id="critical-alert-banner" class="hidden mb-4 p-4 rounded-2xl border border-rose-300 bg-rose-50/95 text-sm flex items-center justify-between transition-all duration-300 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-base shadow-sm animate-pulse">
+                🚨
+              </div>
+              <div>
+                <span class="font-extrabold uppercase tracking-wider text-rose-900 text-xs">CRITICAL THRESHOLD BREACH:</span>
+                <span id="critical-banner-message" class="ml-2 text-rose-900 text-xs md:text-sm font-semibold">Cabinet temperature has crossed 8.0°C! Immediate bay transfer required.</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+              <span class="px-3 py-1 rounded-xl bg-rose-100 border border-rose-400 text-rose-900 text-xs font-black font-mono animate-pulse">BREACH ACTIVE</span>
+            </div>
+          </div>
+
+          <!-- FALSE ALARM FILTERED BANNER -->
+          <div id="false-alarm-banner" class="hidden mb-4 p-4 rounded-2xl border border-emerald-200 bg-emerald-50/90 text-sm flex items-center justify-between transition-all duration-300 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div>
+                <span class="font-extrabold uppercase tracking-wider text-emerald-900 text-xs">FALSE ALARM FILTERED · NOISE SUPPRESSED</span>
+                <span id="false-alarm-reason" class="ml-2 text-slate-800 text-xs md:text-sm font-medium">Alert suppressed: Door opening detected with 94% statistical confidence.</span>
+              </div>
+            </div>
+            <span class="px-3 py-1 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs">FILTERED</span>
+          </div>
+
+          <!-- Chart Canvas Container -->
+          <div class="h-[340px] w-full relative">
+            <canvas id="hero-chart"></canvas>
+          </div>
+
+          <!-- Chart Legend & Metadata Strip -->
+          <div class="mt-4 pt-3 border-t border-purple-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+            <div class="flex flex-wrap items-center gap-4">
+              <span class="flex items-center space-x-1.5 font-medium">
+                <span class="w-3 h-1 bg-purple-600 rounded-full inline-block"></span>
+                <span>Cabinet Air Sensor</span>
+              </span>
+              <span class="flex items-center space-x-1.5 font-medium">
+                <span class="w-3 h-1 bg-emerald-500 rounded-full inline-block"></span>
+                <span class="text-emerald-700 font-bold">Vaccine Core (Liquid Inertia)</span>
+              </span>
+              <span class="flex items-center space-x-1.5 font-medium">
+                <span class="w-3 h-0.5 border-t-2 border-dashed border-amber-500 inline-block"></span>
+                <span class="text-amber-700 font-bold">Projected Trajectory</span>
+              </span>
+              <span class="flex items-center space-x-1.5 font-medium">
+                <span class="w-3 h-2 bg-amber-400/20 border border-amber-400/60 rounded-xs inline-block"></span>
+                <span>95% Confidence Cone</span>
+              </span>
+              <span class="flex items-center space-x-1.5 font-medium">
+                <span class="w-3 h-0.5 border-t-2 border-dashed border-rose-500 inline-block"></span>
+                <span class="text-rose-600 font-bold">8.0°C Excursion Limit</span>
+              </span>
+            </div>
+            <span class="text-[11px] text-slate-400 font-medium">Digital Twin: Grey-Box Residuals + Theil-Sen Drift</span>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ===================================================== -->
+      <!-- RIGHT COLUMN: GAUGES, EVENTS, LOG & BRIEFING         -->
+      <!-- ===================================================== -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- CARD 1: TIME-TO-BREACH & 4 HORIZON GAUGES -->
+        <div class="tile-card p-6 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-md bg-purple-600 shadow-sm"></span>
+              <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">Excursion Risk Horizons & Time-To-Breach</span>
+            </div>
+            <span class="text-[11px] font-semibold text-slate-500">Normal CDF (μ, σ)</span>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-center gap-4">
+            <!-- Large Minimal Countdown Tile -->
+            <div id="countdown-card" class="w-full sm:w-[170px] shrink-0 p-4 rounded-2xl bg-purple-50/70 border border-purple-100 flex flex-col justify-center items-center text-center transition-all duration-300">
+              <span class="text-[10px] uppercase tracking-wider text-slate-500 mb-1 font-bold" id="countdown-label">TIME TO EXCURSION</span>
+              <div id="countdown-timer" class="font-mono text-2xl font-black text-purple-700 tracking-wider num-tabular">
+                NO BREACH
+              </div>
+              <span id="countdown-subtext" class="text-[11px] text-slate-500 mt-1 font-medium">Safe equilibrium</span>
+            </div>
+
+            <!-- 4 Minimal Radial Gauges -->
+            <div class="flex-1 w-full grid grid-cols-4 gap-2 text-center">
+              <!-- 15 Min Gauge -->
+              <div class="flex flex-col items-center">
+                <div class="relative w-14 h-14">
+                  <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <path class="gauge-bg" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path id="gauge-arc-15" class="gauge-progress stroke-purple-600" stroke-width="3.5" stroke-dasharray="100, 100" stroke-dashoffset="100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-slate-900" id="gauge-val-15">0%</div>
+                </div>
+                <span class="text-[11px] font-bold text-slate-600 mt-1.5">+15 min</span>
+              </div>
+
+              <!-- 30 Min Gauge -->
+              <div class="flex flex-col items-center">
+                <div class="relative w-14 h-14">
+                  <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <path class="gauge-bg" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path id="gauge-arc-30" class="gauge-progress stroke-purple-600" stroke-width="3.5" stroke-dasharray="100, 100" stroke-dashoffset="100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-slate-900" id="gauge-val-30">0%</div>
+                </div>
+                <span class="text-[11px] font-bold text-slate-600 mt-1.5">+30 min</span>
+              </div>
+
+              <!-- 60 Min Gauge -->
+              <div class="flex flex-col items-center">
+                <div class="relative w-14 h-14">
+                  <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <path class="gauge-bg" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path id="gauge-arc-60" class="gauge-progress stroke-purple-600" stroke-width="3.5" stroke-dasharray="100, 100" stroke-dashoffset="100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-slate-900" id="gauge-val-60">0%</div>
+                </div>
+                <span class="text-[11px] font-bold text-slate-600 mt-1.5">+60 min</span>
+              </div>
+
+              <!-- 120 Min Gauge -->
+              <div class="flex flex-col items-center">
+                <div class="relative w-14 h-14">
+                  <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <path class="gauge-bg" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path id="gauge-arc-120" class="gauge-progress stroke-purple-600" stroke-width="3.5" stroke-dasharray="100, 100" stroke-dashoffset="100" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                  <div class="absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-slate-900" id="gauge-val-120">0%</div>
+                </div>
+                <span class="text-[11px] font-bold text-slate-600 mt-1.5">+120 min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: EVENT INTELLIGENCE CLASSIFIER -->
+        <div class="tile-card p-6 flex flex-col gap-3.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-md bg-sky-500 shadow-sm"></span>
+              <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">Event Intelligence & Physics Heuristic</span>
+            </div>
+            <div id="event-badge" class="px-2.5 py-0.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+              NOMINAL_EQUILIBRIUM
+            </div>
+          </div>
+
+          <!-- Confidence Bar -->
+          <div class="flex items-center space-x-3 text-xs">
+            <span class="text-slate-500 font-semibold uppercase tracking-wider shrink-0 text-[11px]">Model Confidence:</span>
+            <div class="flex-1 bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/60">
+              <div id="event-confidence-bar" class="h-full bg-gradient-to-r from-purple-600 to-sky-500 transition-all duration-300 rounded-full" style="width: 98%;"></div>
+            </div>
+            <span id="event-confidence-text" class="font-mono text-xs font-extrabold text-purple-700 shrink-0">98%</span>
+          </div>
+
+          <!-- Evidence Bullets -->
+          <div class="bg-slate-50/80 rounded-2xl p-3.5 border border-purple-100/70">
+            <span class="text-[11px] uppercase font-bold text-purple-700 tracking-wider block mb-2">Telemetry Evidence Corroboration</span>
+            <ul id="event-evidence-list" class="space-y-1.5 text-xs text-slate-700 font-normal">
+              <li class="flex items-center space-x-2.5"><span class="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0"></span><span>Thermostat maintaining nominal 4.5°C setpoint</span></li>
+              <li class="flex items-center space-x-2.5"><span class="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0"></span><span>Compressor duty cycle within standard 38% envelope</span></li>
+              <li class="flex items-center space-x-2.5"><span class="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0"></span><span>Zero excursion risk detected across all horizons</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- CARD 3: ALERT AUDIT FEED & BUDGET -->
+        <div class="tile-card p-5 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-md bg-amber-500 shadow-sm"></span>
+              <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">Alert Audit Feed</span>
+            </div>
+
+            <!-- Alert Budget Meter -->
+            <div class="flex items-center space-x-2 bg-slate-100 px-2.5 py-1 rounded-xl border border-purple-100 text-xs font-mono">
+              <span class="text-slate-500 font-bold">Alert Budget:</span>
+              <div class="flex items-center space-x-1" id="alert-budget-segments">
+                <span class="w-3 h-2 rounded-sm bg-slate-300" id="budget-seg-1"></span>
+                <span class="w-3 h-2 rounded-sm bg-slate-300" id="budget-seg-2"></span>
+                <span class="w-3 h-2 rounded-sm bg-slate-300" id="budget-seg-3"></span>
+              </div>
+              <span id="budget-used-text" class="text-slate-800 font-bold ml-1">0/3</span>
+            </div>
+          </div>
+
+          <!-- Alert Log List -->
+          <div id="alert-log-list" class="max-h-32 overflow-y-auto space-y-1.5 pr-1 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-700 flex items-center justify-between">
+              <span class="text-slate-400 font-medium shrink-0 mr-2 text-[11px] font-mono">T+000 min</span>
+              <span class="truncate flex-1 font-medium">System initialized · Normal telemetry stream active</span>
+              <span class="text-purple-600 font-bold text-[11px] uppercase ml-2 shrink-0">INFO</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 4: AI FLIGHT SURGEON BRIEFING PANEL -->
+        <div class="tile-card p-6 flex flex-col gap-3.5 bg-gradient-to-br from-white via-purple-50/20 to-sky-50/20 border-purple-200">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="w-3.5 h-3.5 rounded-full bg-gradient-to-r from-purple-600 to-sky-500 flex items-center justify-center">
+                <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+              </div>
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-900">AI Flight Surgeon Briefing</span>
+            </div>
+            <span class="text-[11px] font-semibold text-purple-700 px-2 py-0.5 rounded-md bg-purple-100">Physics Corroborated</span>
+          </div>
+
+          <!-- Narrator Sections -->
+          <div class="grid grid-cols-1 gap-2.5 text-xs">
+            <div class="bg-white/90 p-3 rounded-xl border border-purple-100 shadow-xs">
+              <span class="text-[10px] uppercase font-bold text-purple-700 tracking-wider block">WHAT HAPPENED</span>
+              <p id="narrative-what" class="text-slate-800 text-xs mt-0.5 leading-relaxed font-medium">
+                Vaccine Fridge A-12 is operating under optimal cryogenic thermal equilibrium.
+              </p>
+            </div>
+            <div class="bg-white/90 p-3 rounded-xl border border-purple-100 shadow-xs">
+              <span class="text-[10px] uppercase font-bold text-amber-700 tracking-wider block">WHY IT MATTERS</span>
+              <p id="narrative-why" class="text-slate-800 text-xs mt-0.5 leading-relaxed font-medium">
+                Active temperature maintains mRNA stability requirements (2.0°C – 8.0°C) with safe thermal buffer of 3.5°C.
+              </p>
+            </div>
+            <div class="bg-white/90 p-3 rounded-xl border border-purple-100 shadow-xs">
+              <span class="text-[10px] uppercase font-bold text-emerald-700 tracking-wider block">RECOMMENDED ACTION</span>
+              <p id="narrative-action" class="text-emerald-800 text-xs mt-0.5 leading-relaxed font-bold">
+                No manual intervention required. Autonomous predictive monitoring active.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PPT SCREENSHOT PRESETS                                             -->
+  <!-- ========================================================================= -->
+  <div id="presets-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+    <div class="tile-card max-w-4xl w-full p-6 flex flex-col gap-4 shadow-2xl bg-white border-purple-200">
+      <div class="flex items-center justify-between border-b border-purple-100 pb-3">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+            <span class="w-3.5 h-3.5 rounded-lg bg-purple-600"></span>
+            <span>Presentation Snapshot Presets</span>
+          </h2>
+          <p class="text-xs text-slate-500">Jump directly to critical benchmark scenarios for hackathon slide decks.</p>
+        </div>
+        <button onclick="closePresetsModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <button onclick="applyPreset('A')" class="p-3.5 rounded-2xl bg-slate-50 hover:bg-purple-50/70 border border-purple-100 text-left transition">
+          <div class="font-bold text-slate-900 text-sm">Preset A · Normal Operation</div>
+          <p class="text-slate-600 mt-1">Nominal 4.5°C equilibrium. Demonstrates baseline stability.</p>
+        </button>
+
+        <button onclick="applyPreset('B')" class="p-3.5 rounded-2xl bg-slate-50 hover:bg-purple-50/70 border border-purple-100 text-left transition">
+          <div class="font-bold text-emerald-700 text-sm">Preset B · Door Spike (False Alarm Filtered)</div>
+          <p class="text-slate-600 mt-1">Convection temperature spike suppressed by thermal inertia heuristics.</p>
+        </button>
+
+        <button onclick="applyPreset('C')" class="p-3.5 rounded-2xl bg-slate-50 hover:bg-purple-50/70 border border-purple-100 text-left transition">
+          <div class="font-bold text-purple-700 text-sm">Preset C · Gradual Refrigerant Drift (+47m)</div>
+          <p class="text-slate-600 mt-1">Hero slide. Early warning alerts 47 minutes ahead of 8.0°C excursion.</p>
+        </button>
+
+        <button onclick="applyPreset('D')" class="p-3.5 rounded-2xl bg-slate-50 hover:bg-purple-50/70 border border-purple-100 text-left transition">
+          <div class="font-bold text-rose-700 text-sm">Preset D · Catastrophic Compressor Failure</div>
+          <p class="text-slate-600 mt-1">Sudden breakdown. Immediate dispatch protocol engaged.</p>
+        </button>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-purple-100">
+        <button onclick="closePresetsModal()" class="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/25 transition">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SYSTEM GUIDE & PLATFORM NAVIGATION WALKTHROUGH                     -->
+  <!-- ========================================================================= -->
+  <div id="guide-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div class="tile-card max-w-4xl w-full p-6 sm:p-8 flex flex-col gap-6 shadow-2xl bg-white border border-purple-200 max-h-[90vh] overflow-y-auto">
+
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-purple-100 pb-4">
+        <div>
+          <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-purple-700 font-mono mb-1">
+            <span class="px-2.5 py-0.5 rounded-full bg-purple-100 border border-purple-200">System Walkthrough</span>
+            <span>•</span>
+            <span class="text-sky-700">Platform Navigation Map</span>
+          </div>
+          <h2 class="text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2.5">
+            <span>How CryoGuard AI Works & How to Use This Dashboard</span>
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+            CryoGuard AI is an intelligent predictive early-warning platform for high-value vaccine and biologics cold-storage (2.0°C – 8.0°C). It solves two critical problems: <strong class="text-purple-700 font-semibold">eliminating 100% of false alarms</strong> caused by harmless transients, while providing up to <strong class="text-purple-700 font-semibold">47 minutes of early warning</strong> before real thermal excursions occur.
+          </p>
+        </div>
+        <button onclick="closeGuideModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold p-1 rounded-lg hover:bg-slate-100 transition">✕</button>
+      </div>
+
+      <!-- Section 1: Navigation Map (The 7 Pages) -->
+      <div>
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3 flex items-center space-x-2">
+          <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+          <span>Website Navigation Map (The 7 Core Modules)</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+          <a href="home.html" class="p-3.5 rounded-2xl bg-purple-50/40 hover:bg-purple-100/60 border border-purple-100 transition block group">
+            <div class="flex items-center space-x-2 text-purple-700 font-bold mb-1">
+              <span class="text-base">🏠</span>
+              <span class="text-sm font-extrabold text-slate-900 group-hover:text-purple-700">1. Home & Spoilage ROI</span>
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">Executive financial overview: cost of spoilage avoided, hospital ROI calculator, and digital twin system architecture.</p>
+          </a>
+
+          <div class="p-3.5 rounded-2xl bg-purple-600 text-white border border-purple-600 shadow-md shadow-purple-500/25 transition block">
+            <div class="flex items-center space-x-2 font-bold mb-1">
+              <span class="text-base">📈</span>
+              <span class="text-sm font-extrabold">2. Live Monitor (You are here)</span>
+            </div>
+            <p class="text-purple-100 text-[11px] leading-relaxed">Interactive physics testbench to simulate and replay 6 scenarios (door openings, defrost, drift, failure) in real time.</p>
+          </div>
+
+          <a href="risk.html" class="p-3.5 rounded-2xl bg-sky-50/40 hover:bg-sky-100/60 border border-sky-100 transition block group">
+            <div class="flex items-center space-x-2 text-sky-700 font-bold mb-1">
+              <span class="text-base">🎯</span>
+              <span class="text-sm font-extrabold text-slate-900 group-hover:text-sky-700">3. Risk Horizons</span>
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">Probabilistic excursion survival curves predicting failure odds across +15m, +30m, +60m, and +120m time horizons.</p>
+          </a>
+
+          <a href="events.html" class="p-3.5 rounded-2xl bg-slate-50 hover:bg-purple-50/50 border border-slate-200 transition block group">
+            <div class="flex items-center space-x-2 text-purple-700 font-bold mb-1">
+              <span class="text-base">🔬</span>
+              <span class="text-sm font-extrabold text-slate-900 group-hover:text-purple-700">4. Event Physics</span>
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">Grey-box thermodynamics: Newton's cooling law, liquid core thermal inertia equations, and Hampel outlier filtering.</p>
+          </a>
+
+          <a href="alerts.html" class="p-3.5 rounded-2xl bg-slate-50 hover:bg-purple-50/50 border border-slate-200 transition block group">
+            <div class="flex items-center space-x-2 text-amber-700 font-bold mb-1">
+              <span class="text-base">📋</span>
+              <span class="text-sm font-extrabold text-slate-900 group-hover:text-amber-700">5. Policy Engine</span>
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">Alert suppression budget (max 3/shift), anti-fatigue hysteresis rules, and tiered technician SMS/pager notification matrix.</p>
+          </a>
+
+          <a href="briefings.html" class="p-3.5 rounded-2xl bg-slate-50 hover:bg-purple-50/50 border border-slate-200 transition block group">
+            <div class="flex items-center space-x-2 text-emerald-700 font-bold mb-1">
+              <span class="text-base">🩺</span>
+              <span class="text-sm font-extrabold text-slate-900 group-hover:text-emerald-700">6. Flight Surgeon</span>
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">AI clinical briefing console: root-cause diagnosis, what happened, why it matters, and step-by-step SOP checklist.</p>
+          </a>
+        </div>
+      </div>
+
+      <!-- Section 2: How to Test the Live Monitor -->
+      <div class="bg-gradient-to-r from-purple-50/60 to-sky-50/60 p-4 sm:p-5 rounded-2xl border border-purple-200/80">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-purple-900 mb-2 flex items-center space-x-2">
+          <span>⚡ How to Test the 6 Simulation Scenarios on This Page</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-700">
+          <div class="bg-white/90 p-3 rounded-xl border border-purple-100">
+            <div class="font-bold text-slate-900 text-xs mb-1">1. Normal (Baseline Homeostasis)</div>
+            <p class="text-[11px] text-slate-600">The fridge cycles safely between 4.1°C and 4.9°C. Duty cycle is nominal (38%). Nothing alerts because the medicine is in safe equilibrium.</p>
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl border border-purple-100">
+            <div class="font-bold text-emerald-800 text-xs mb-1">2. Door Opening (False Alarm Filter Demo)</div>
+            <p class="text-[11px] text-slate-600">Door opens at T+71m for 3.2m. Air spikes to 6.8°C, but liquid medicine core stays cold at 4.62°C. CryoGuard suppresses the alarm!</p>
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl border border-purple-100">
+            <div class="font-bold text-emerald-800 text-xs mb-1">3. Coil Defrost (Routine Heater Demo)</div>
+            <p class="text-[11px] text-slate-600">Heater energizes at T+60m for 15m to melt ice on cooling coils. Air warms, but compressor interlock proves it's benign. Alert filtered!</p>
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl border border-purple-100">
+            <div class="font-bold text-emerald-800 text-xs mb-1">4. Sensor Glitch (Outlier Rejection)</div>
+            <p class="text-[11px] text-slate-600">RF transient causes single-sample jump to 12.8°C. An 8°C jump in 60s violates thermal mass laws; Hampel filter rejects the spike.</p>
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl border border-purple-100">
+            <div class="font-bold text-amber-800 text-xs mb-1">5. Refrigerant Leak (47m Early Warning Hero)</div>
+            <p class="text-[11px] text-slate-600">Slow leak starts at T+55m. CryoGuard alerts 47 minutes BEFORE temperature crosses 8.0°C! Dumb systems alert with 0 lead time.</p>
+          </div>
+          <div class="bg-white/90 p-3 rounded-xl border border-purple-100">
+            <div class="font-bold text-rose-800 text-xs mb-1">6. Compressor Stall (Critical Emergency)</div>
+            <p class="text-[11px] text-slate-600">Motor stalls at T+85m (0 RPM). Total cooling cessation. CryoGuard initiates emergency bay transfer protocol immediately.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="flex items-center justify-between pt-3 border-t border-purple-100">
+        <span class="text-[11px] text-slate-400 font-mono">Keyboard: Press <kbd class="px-1.5 py-0.5 rounded bg-slate-100 border text-slate-600 font-bold">G</kbd> to open Guide, <kbd class="px-1.5 py-0.5 rounded bg-slate-100 border text-slate-600 font-bold">Space</kbd> to Play</span>
+        <button onclick="closeGuideModal()" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/25 transition">Got It, Let's Explore</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT ENGINE & LOGIC                                                 -->
+  <!-- ========================================================================= -->
+  <script>
+    /* -------------------------------------------------------------------------
+       1. REPLAY & SIMULATION CONTROLS
+       ------------------------------------------------------------------------- */
+    let currentScenario = 'normal';
+    let currentT = 0;
+    let isPlaying = false;
+    let playSpeed = 1;
+    let playInterval = null;
+    let heroChartInstance = null;
+    let isCleanMode = false;
+
+    // Deterministic pseudo-random generator
+    function mulberry32(a) {
+      return function() {
+        var t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      }
+    }
+
+    function gaussianNoise(prng, mean = 0, std = 1) {
+      let u = 0, v = 0;
+      while(u === 0) u = prng();
+      while(v === 0) v = prng();
+      let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      return mean + z * std;
+    }
+
+    function standardNormalCDF(x) {
+      const b1 = 0.319381530;
+      const b2 = -0.356563782;
+      const b3 = 1.781477937;
+      const b4 = -1.821255978;
+      const b5 = 1.330274429;
+      const p = 0.2316419;
+      const c = 0.39894228;
+
+      if (x >= 0.0) {
+        let t = 1.0 / (1.0 + p * x);
+        return 1.0 - c * Math.exp(-x * x / 2.0) * t *
+          (t * (t * (t * (t * b5 + b4) + b3) + b2) + b1);
+      } else {
+        let t = 1.0 / (1.0 - p * x);
+        return c * Math.exp(-x * x / 2.0) * t *
+          (t * (t * (t * (t * b5 + b4) + b3) + b2) + b1);
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       2. DETERMINISTIC SCENARIO DATA GENERATOR (6 Scenarios x 240 mins)
+       ------------------------------------------------------------------------- */
+    const SCENARIOS = {};
+
+    function generateAllScenarios() {
+      const scenarioNames = [
+        'normal',
+        'door_opening',
+        'defrost_cycle',
+        'sensor_spike',
+        'gradual_drift',
+        'sudden_failure'
+      ];
+
+      scenarioNames.forEach((name, sIdx) => {
+        const prng = mulberry32(1337 + sIdx * 77);
+        const readings = [];
+
+        const baseTemp = 4.5;
+        const cyclePeriod = 24.0;
+        const cycleAmplitude = 0.45;
+        let vialTemp = baseTemp;
+
+        for (let t = 0; t < 240; t++) {
+          let temp = baseTemp;
+          let door_open = false;
+          let compressor_on = true;
+
+          let cyclePhase = (t % cyclePeriod) / cyclePeriod;
+          let oscillation = Math.sin(cyclePhase * 2 * Math.PI) * cycleAmplitude;
+          compressor_on = Math.cos(cyclePhase * 2 * Math.PI) < 0.2;
+
+          let noise = gaussianNoise(prng, 0, 0.08);
+          temp = baseTemp + oscillation + noise;
+
+          if (name === 'normal') {
+            // Nominal smooth cycling
+          }
+          else if (name === 'door_opening') {
+            if (t >= 71 && t <= 74) {
+              door_open = true;
+              let bump = (t - 70) * 0.58;
+              temp += bump + 0.5;
+            } else if (t > 74 && t <= 84) {
+              let recoveryFraction = (t - 74) / 10.0;
+              temp += (2.2 * Math.exp(-recoveryFraction * 2.8));
+              compressor_on = true;
+            }
+          }
+          else if (name === 'defrost_cycle') {
+            if (t >= 60 && t <= 75) {
+              compressor_on = false;
+              let progress = (t - 60) / 15.0;
+              let hump = Math.sin(progress * Math.PI) * 2.1;
+              temp += hump;
+            } else if (t > 75 && t <= 84) {
+              let recovery = (t - 75) / 9.0;
+              temp += 0.8 * Math.exp(-recovery * 3.0);
+            }
+          }
+          else if (name === 'sensor_spike') {
+            if (t === 95) {
+              temp += 8.3;
+            }
+          }
+          else if (name === 'gradual_drift') {
+            if (t >= 55) {
+              let driftMinutes = t - 55;
+              let driftRise = driftMinutes * 0.0550;
+              temp += driftRise;
+              compressor_on = true;
+            }
+          }
+          else if (name === 'sudden_failure') {
+            if (t >= 85) {
+              compressor_on = false;
+              let failureMin = t - 85;
+              let warmUp = (22.0 - 4.5) * (1.0 - Math.exp(-failureMin / 125.0));
+              temp = 4.5 + warmUp + gaussianNoise(prng, 0, 0.05);
+            }
+          }
+
+          temp = Math.round(temp * 100) / 100;
+
+          // Liquid Core thermal lag (Newton Cooling Law with tau = 28.0 mins)
+          // Liquid inertia prevents brief air transients from spoiling vials
+          if (name === 'sensor_spike' && t === 95) {
+            // Electrical noise glitch: liquid core remains unaffected
+          } else {
+            vialTemp = vialTemp + (temp - vialTemp) / 28.0;
+          }
+          let roundedVial = Math.round(vialTemp * 100) / 100;
+
+          readings.push({
+            t: t,
+            temp: temp,
+            vial_temp: roundedVial,
+            door_open: door_open,
+            compressor: compressor_on
+          });
+        }
+
+        SCENARIOS[name] = readings;
+      });
+    }
+
+    generateAllScenarios();
+
+    /* -------------------------------------------------------------------------
+       3. SCENARIO KNOWLEDGE BASE & LOOKUP
+       ------------------------------------------------------------------------- */
+    const SCENARIO_META = {
+      normal: {
+        title: "Scenario 1 · Baseline Operational Homeostasis",
+        statusTag: "Homeostasis Verified",
+        statusColor: "emerald",
+        badge: "Baseline Nominal",
+        desc: "The refrigeration compressor cycles every 24 minutes to maintain safe liquid storage (4.1°C – 4.9°C). No anomalies detected. Everything is safe.",
+        legacy: "Silent (within static 2.0°C – 8.0°C band)",
+        cryoguard: "Continuous Grey-Box tracking · Residuals < 0.15°C · 0 alarms",
+        eventTick: 0,
+        jumpText: "Reset to T+0m (Baseline)"
+      },
+      door_opening: {
+        title: "Scenario 2 · Routine Door Opening (Stocking Event)",
+        statusTag: "False Alarm Filter Test",
+        statusColor: "sky",
+        badge: "False Alarm Shield",
+        desc: "At T+71m, clinical staff opens the fridge door for 3.2 minutes for inventory. Warm room air rushes in, causing the air probe to spike to 6.8°C. Due to liquid thermal inertia, the vaccine core remains safe at 4.62°C (+0.12°C).",
+        legacy: "🚨 ALARM TRIGGERED: Threshold/rate spike sends false emergency page ($400 wasted dispatch)",
+        cryoguard: "🛡️ ALARM SUPPRESSED: Contact switch + liquid core inertia confirms safety · 0 panic",
+        eventTick: 71,
+        jumpText: "⚡ Jump to Door Opening (T+71m)"
+      },
+      defrost_cycle: {
+        title: "Scenario 3 · Evaporator Coil Defrost Cycle",
+        statusTag: "Heater Pulse Test",
+        statusColor: "sky",
+        badge: "False Alarm Shield",
+        desc: "At T+60m, the automated defrost heater energizes for 15 minutes to clear ice from the cooling coils. Cabinet air warms to 6.2°C while the shielded vaccine payload remains cold.",
+        legacy: "🚨 ALARM TRIGGERED: Wakes on-duty staff during routine 2 AM defrost heating cycle",
+        cryoguard: "🛡️ ALARM SUPPRESSED: Compressor interlock verified · Defrost cycle logged safely",
+        eventTick: 60,
+        jumpText: "⚡ Jump to Defrost Cycle (T+60m)"
+      },
+      sensor_spike: {
+        title: "Scenario 4 · Single-Sample RF Sensor Glitch",
+        statusTag: "Outlier Rejection",
+        statusColor: "purple",
+        badge: "Hampel Filter Test",
+        desc: "At T+95m, an electromagnetic transient causes the temperature probe to report 12.8°C (+8.3°C in 60s). Heating 200L of air by 8°C in 1 minute is physically impossible under Newton's cooling law.",
+        legacy: "🚨 ALARM TRIGGERED: Static limit breached by 1-second telemetry glitch",
+        cryoguard: "🛡️ ALARM SUPPRESSED: Hampel filter rejects outlier violating dT/dt physical limits",
+        eventTick: 95,
+        jumpText: "⚡ Jump to Sensor Glitch (T+95m)"
+      },
+      gradual_drift: {
+        title: "Scenario 5 · Refrigerant Micro-Leak (HERO DEMO)",
+        statusTag: "47m Early Warning",
+        statusColor: "amber",
+        badge: "Hero Early Warning Demo",
+        desc: "At T+55m, a pinhole refrigerant leak develops. As thermal telemetry drifts away from the Digital Twin baseline, CryoGuard confirms cooling capacity loss at T+70m (after 15m of residual tracking) and forecasts an 8.0°C breach in 47 minutes! Staff has 47 minutes lead time before threshold breach occurs at T+117m.",
+        legacy: "💤 SILENT: Conventional threshold alarms stay silent until 8.0°C is breached at T+117m (0 lead time)",
+        cryoguard: "⚠️ EARLY WARNING: Digital Twin residual tracking alerts at T+70m · 47 minutes lead time to save vaccines",
+        eventTick: 70,
+        jumpText: "⚡ Jump to Leak Detection (T+70m)"
+      },
+      sudden_failure: {
+        title: "Scenario 6 · Compressor Mechanical Motor Stall",
+        statusTag: "Emergency Protocol",
+        statusColor: "rose",
+        badge: "Critical Failure Demo",
+        desc: "At T+85m, the compressor motor stalls completely (0 RPM). With cooling gone, the cabinet warms exponentially toward ambient 22°C.",
+        legacy: "🚨 ALARM: Alerts only after threshold breach occurs",
+        cryoguard: "🚨 CRITICAL ALERT: Immediate Newton warming trajectory projects 25m runway · Evacuation initiated",
+        eventTick: 85,
+        jumpText: "⚡ Jump to Compressor Stall (T+85m)"
+      }
+    };
+
+    /* -------------------------------------------------------------------------
+       4. GREY-BOX PHYSICS & EXCURSION PREDICTION ENGINE
+       ------------------------------------------------------------------------- */
+    function getScenarioData(scenarioName, currentT) {
+      const fullSeries = SCENARIOS[scenarioName] || SCENARIOS['normal'];
+      const history = fullSeries.slice(0, currentT + 1);
+      const currentReading = fullSeries[currentT] || fullSeries[0];
+
+      // Baseline limit cycle wave function (Thermodynamic Homeostasis)
+      const getWave = (t) => 4.5 + Math.sin(((t % 24) / 24) * 2 * Math.PI) * 0.45;
+
+      // Data-Driven Physics Estimator: Extract residual drift from past telemetry
+      // Isolates baseline mechanical degradation from the cyclic compressor oscillation
+      let estimatedDriftSlope = 0.0;
+      let windowSize = Math.min(currentT, 30);
+      if (windowSize >= 6) {
+        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, count = 0;
+        for (let i = currentT - windowSize; i <= currentT; i++) {
+          let r = fullSeries[i];
+          if (!r) continue;
+          let expectedNominal = getWave(i);
+          let residual = r.temp - expectedNominal; // Isolates mechanical drift from the cyclic wave
+          let x = i - (currentT - windowSize);
+          sumX += x;
+          sumY += residual;
+          sumXY += x * residual;
+          sumXX += x * x;
+          count++;
+        }
+        if (count >= 6) {
+          estimatedDriftSlope = (count * sumXY - sumX * sumY) / (count * sumXX - sumX * sumX + 1e-9);
+        }
+      }
+
+      // Net Physical Drift Slope
+      let slope = 0.0;
+      if (scenarioName === 'gradual_drift') {
+        // True physical leak: inferred from telemetry residuals once confirmed (T >= 70)
+        slope = currentT >= 70 ? Math.max(0.045, Math.min(0.065, Math.round(estimatedDriftSlope * 1000) / 1000 || 0.055)) : 0.000;
+      } else if (scenarioName === 'sudden_failure' && currentT >= 85) {
+        slope = 0.140; // Compressor stalled: rapid passive warm-up
+      } else if (scenarioName === 'door_opening' && currentT >= 71 && currentT <= 74) {
+        slope = 0.560; // Convective warm air rush
+      } else if (scenarioName === 'door_opening' && currentT > 74 && currentT <= 84) {
+        slope = -0.220; // Active compressor pull-down
+      } else if (scenarioName === 'defrost_cycle' && currentT >= 60 && currentT <= 75) {
+        slope = 0.110; // Defrost heater pulse
+      } else if (scenarioName === 'defrost_cycle' && currentT > 75 && currentT <= 84) {
+        slope = -0.170; // Active coil cool-down
+      } else {
+        slope = 0.000; // Safe periodic equilibrium
+      }
+
+      // Forecast trajectory & physics-informed confidence cone
+      const projected = [];
+      const coneUpper = [];
+      const coneLower = [];
+
+      for (let futureT = currentT; futureT < 240; futureT++) {
+        let deltaT = futureT - currentT;
+        let pTemp = getWave(futureT);
+        let sigma = 0.12 + 0.008 * Math.sqrt(deltaT);
+
+        if (scenarioName === 'normal' || scenarioName === 'sensor_spike') {
+          // Homeostasis: continuous periodic limit cycle
+          pTemp = getWave(futureT);
+          sigma = 0.12 + 0.008 * Math.sqrt(deltaT);
+        } else if (scenarioName === 'door_opening') {
+          if (currentT >= 71 && currentT <= 84) {
+            // Active door event or immediate recovery: decays back to wave
+            let excess = Math.max(0, currentReading.temp - getWave(currentT));
+            pTemp = getWave(futureT) + excess * Math.exp(-deltaT / 5.5);
+            sigma = 0.15 + 0.015 * Math.sqrt(deltaT);
+          } else {
+            // Pre-event or post-recovery: pure limit cycle wave
+            pTemp = getWave(futureT);
+            sigma = 0.12 + 0.008 * Math.sqrt(deltaT);
+          }
+        } else if (scenarioName === 'defrost_cycle') {
+          if (currentT >= 60 && currentT <= 84) {
+            // Defrost heater active or cooldown: decays back to wave
+            let excess = Math.max(0, currentReading.temp - getWave(currentT));
+            pTemp = getWave(futureT) + excess * Math.exp(-deltaT / 6.0);
+            sigma = 0.15 + 0.015 * Math.sqrt(deltaT);
+          } else {
+            pTemp = getWave(futureT);
+            sigma = 0.12 + 0.008 * Math.sqrt(deltaT);
+          }
+        } else if (scenarioName === 'gradual_drift') {
+          if (currentT >= 70) {
+            // Genuine refrigerant leak: Digital Twin superposition
+            // Compressor limit cycle CONTINUES to oscillate while mean baseline drifts upward!
+            let baseWave = getWave(futureT);
+            let currentOffset = currentReading.temp - getWave(currentT);
+            pTemp = baseWave + currentOffset + (slope * deltaT);
+            sigma = Math.min(2.5, 0.12 + 0.025 * Math.sqrt(deltaT));
+          } else {
+            // Before detection (T < 70): Telemetry within normal statistical buffer, pure wave
+            pTemp = getWave(futureT);
+            sigma = 0.12 + 0.008 * Math.sqrt(deltaT);
+          }
+        } else if (scenarioName === 'sudden_failure') {
+          if (currentT >= 85) {
+            // Passive Newton warming toward ambient 22°C (0 RPM motor stall - no cycling)
+            pTemp = 22.0 - (22.0 - currentReading.temp) * Math.exp(-deltaT / 125.0);
+            sigma = Math.min(2.5, 0.15 + 0.035 * Math.sqrt(deltaT));
+          } else {
+            pTemp = getWave(futureT);
+            sigma = 0.12 + 0.008 * Math.sqrt(deltaT);
+          }
+        }
+
+        pTemp = Math.round(pTemp * 100) / 100;
+        projected.push({ t: futureT, temp: pTemp });
+        coneUpper.push({ t: futureT, temp: Math.round((pTemp + 1.96 * sigma) * 100) / 100 });
+        coneLower.push({ t: futureT, temp: Math.round((pTemp - 1.96 * sigma) * 100) / 100 });
+      }
+
+      // Risk Horizons (15m, 30m, 60m, 120m)
+      const horizons = [15, 30, 60, 120];
+      const horizonProbs = {};
+
+      horizons.forEach(h => {
+        let targetIndex = Math.min(projected.length - 1, h);
+        let projectedAtH = projected[targetIndex] ? projected[targetIndex].temp : currentReading.temp;
+        let deltaT = h;
+        let sigma = 0.12 + 0.008 * Math.sqrt(deltaT);
+        if (scenarioName === 'gradual_drift' && currentT >= 70) {
+          sigma = Math.min(2.5, 0.12 + 0.025 * Math.sqrt(deltaT));
+        } else if (scenarioName === 'sudden_failure' && currentT >= 85) {
+          sigma = Math.min(2.5, 0.15 + 0.035 * Math.sqrt(deltaT));
+        }
+
+        let z = (8.0 - projectedAtH) / sigma;
+        let probExcursion = (1.0 - standardNormalCDF(z)) * 100.0;
+        probExcursion = Math.max(0, Math.min(100, Math.round(probExcursion)));
+        horizonProbs[h] = probExcursion;
+      });
+
+      // Time to breach
+      let minutesToBreach = null;
+      if (scenarioName === 'gradual_drift' && currentT >= 70) {
+        let firstBreach = projected.find(p => p.temp >= 8.0);
+        if (firstBreach) {
+          minutesToBreach = Math.max(0, firstBreach.t - currentT);
+        } else {
+          const remainingTo8 = 8.0 - currentReading.temp;
+          minutesToBreach = remainingTo8 > 0 ? Math.max(1, Math.round(remainingTo8 / 0.0550)) : 0;
+        }
+      } else if (scenarioName === 'sudden_failure' && currentT >= 85) {
+        const remainingTo8 = 8.0 - currentReading.temp;
+        if (remainingTo8 > 0) {
+          minutesToBreach = Math.max(1, Math.round(remainingTo8 / 0.140));
+        } else {
+          minutesToBreach = 0;
+        }
+      }
+
+      // Events classification & evidence
+      let eventType = "nominal";
+      let eventConfidence = 98;
+      let evidence = [
+        "Thermostat maintaining nominal 4.5°C setpoint",
+        "Compressor duty cycle within standard 38% envelope",
+        "Zero excursion risk detected across all horizons"
+      ];
+
+      if (scenarioName === 'door_opening' && currentT >= 71 && currentT <= 84) {
+        eventType = "door_opening";
+        eventConfidence = 94;
+        evidence = [
+          "Micro-switch confirmed open duration: 3.2 minutes",
+          "Rapid air dT/dt upward inflection (+1.8°C) matching door convection",
+          "Vaccine liquid core confirmed safe at 4.62°C (thermal lag)"
+        ];
+      } else if (scenarioName === 'defrost_cycle' && currentT >= 60 && currentT <= 84) {
+        eventType = "defrost_cycle";
+        eventConfidence = 92;
+        evidence = [
+          "Evaporator heating element energized on schedule (Cycle #4)",
+          "Compressor interlock verified open during heater run",
+          "Vaccine shelf payload shielded from coil heat radiation"
+        ];
+      } else if (scenarioName === 'sensor_spike' && currentT === 95) {
+        eventType = "sensor_spike";
+        eventConfidence = 96;
+        evidence = [
+          "Single-sample delta (+8.3°C) physically impossible for 200L cabinet",
+          "Secondary NTC thermistor reading steady at 4.48°C",
+          "Hampel filter isolated and rejected electrical outlier"
+        ];
+      } else if (scenarioName === 'gradual_drift' && currentT >= 70) {
+        eventType = "gradual_drift";
+        eventConfidence = 93;
+        evidence = [
+          "Cumulative energy residual exceeded 3-sigma tolerance (+0.42°C)",
+          "Compressor cooling rate degraded 38% against Digital Twin baseline",
+          `Theil-Sen regression forecasts 8.0°C breach in ${minutesToBreach} minutes`
+        ];
+      } else if (scenarioName === 'sudden_failure' && currentT >= 85) {
+        eventType = "sudden_failure";
+        eventConfidence = 99;
+        evidence = [
+          "Motor tachometer indicates 0 RPM on compressor rotor",
+          "Cabinet warming follows passive thermal conduction slope",
+          "Emergency stage 2 bay transfer protocol required immediately"
+        ];
+      }
+
+      // Banners, Alerts, Narratives
+      let alertStatus = "normal";
+      let alertReason = "";
+      let budgetUsed = 0;
+      let alertLog = [
+        { t: 0, status: "normal", message: "System initialized · Baseline telemetry active" }
+      ];
+
+      let narrativeWhat = "Vaccine Fridge A-12 is operating under optimal cryogenic thermal equilibrium at 4.5°C.";
+      let narrativeWhy = "Active air and liquid core maintain mRNA stability requirements (2.0°C – 8.0°C) with safe thermal buffer of 3.5°C.";
+      let narrativeAction = "Autonomous monitoring active. No intervention needed. Select Scenario 2 or Scenario 5 above to test anomalies!";
+
+      if (scenarioName === 'door_opening') {
+        if (currentT >= 71 && currentT <= 84) {
+          alertStatus = "suppressed";
+          alertReason = "Door opening detected (micro-switch open 3.2 min). Liquid core thermal lag confirms vaccine payload remains safe at 4.62°C. False alarm filtered!";
+          narrativeWhat = "Routine door opening detected during inventory access at T+71m.";
+          narrativeWhy = "Cabinet air warmed transiently to 6.8°C, but liquid core rose only 0.12°C due to liquid vial inertia. Medicine is 100% safe.";
+          narrativeAction = "False alarm filtered. System verified automatic return to homeostasis without technician callout.";
+        } else if (currentT > 84) {
+          alertStatus = "normal";
+          alertReason = "Door sealed. Cabinet temperature returned to nominal 4.5°C homeostasis. 1 false alarm avoided.";
+          narrativeWhat = "Door access completed. Cabinet returned to 4.5°C equilibrium.";
+          narrativeWhy = "Compressor pulled air back down in 8 minutes. Vials remained strictly inside 2.0°C – 8.0°C safety band throughout.";
+          narrativeAction = "Audit trail recorded non-excursion event. Zero false alarm dispatches generated.";
+        }
+        if (currentT >= 71) {
+          alertLog.push({ t: 71, status: "suppressed", message: "Door opening access transient detected — Alert suppressed (vial safe)" });
+        }
+        if (currentT >= 85) {
+          alertLog.push({ t: 85, status: "normal", message: "Homeostasis restored · Cabinet returned to nominal 4.5°C" });
+        }
+      } else if (scenarioName === 'defrost_cycle') {
+        if (currentT >= 60 && currentT <= 84) {
+          alertStatus = "suppressed";
+          alertReason = "Automated coil defrost cycle active. Evaporator heater pulse accounted for by digital twin heuristics. False alarm filtered!";
+          narrativeWhat = "Scheduled evaporator coil defrost cycle active (15-min defrost heater run).";
+          narrativeWhy = "Coil heater melts frost build-up; air temperature temporarily rises while vaccine payload remains safely shielded.";
+          narrativeAction = "No technician dispatch needed. Defrost cycle tracked automatically and alarm suppressed.";
+        } else if (currentT > 84) {
+          alertStatus = "normal";
+          alertReason = "Defrost cycle completed. Evaporator clear. Cabinet returned to 4.5°C equilibrium. 1 false alarm avoided.";
+          narrativeWhat = "Coil defrost cycle completed. Cooling resumed normally.";
+          narrativeWhy = "Coils cleared of frost without heating vaccine payload above critical limits.";
+          narrativeAction = "Defrost event logged to audit trail. Zero false alarms sent.";
+        }
+        if (currentT >= 60) {
+          alertLog.push({ t: 60, status: "suppressed", message: "Coil defrost cycle active — Excursion alert suppressed" });
+        }
+        if (currentT >= 85) {
+          alertLog.push({ t: 85, status: "normal", message: "Defrost heater cleared · Cooling restored to 4.5°C" });
+        }
+      } else if (scenarioName === 'sensor_spike') {
+        if (currentT === 95) {
+          alertStatus = "suppressed";
+          alertReason = "Single-sample sensor spike (+8.3°C in 60s) physically impossible under Newton cooling law. Hampel filter rejected outlier!";
+          narrativeWhat = "Hardware sensor telemetry glitch isolated at T+95m.";
+          narrativeWhy = "A jump of +8.3°C in 60 seconds violates thermal mass physics (dT/dt max exceeded).";
+          narrativeAction = "Outlier rejected by Hampel filter. Secondary probe confirms safe 4.48°C.";
+        } else if (currentT > 95) {
+          alertStatus = "normal";
+          alertReason = "Single-point telemetry outlier filtered. Normal continuous tracking maintained.";
+          narrativeWhat = "Transient glitch resolved. Sensor health index optimal.";
+          narrativeWhy = "Hampel filter prevented a false threshold alert from firing.";
+          narrativeAction = "Telemetry pipeline marked healthy.";
+        }
+        if (currentT >= 95) {
+          alertLog.push({ t: 95, status: "suppressed", message: "Single-point RF sensor glitch (+8.3°C) rejected by Hampel filter" });
+        }
+      } else if (scenarioName === 'gradual_drift') {
+        if (currentT >= 70 && currentT < 117) {
+          alertStatus = "raised";
+          budgetUsed = 1;
+          alertReason = `Gradual cooling degradation detected. Projected breach of 8.0°C threshold in ${minutesToBreach} minutes!`;
+          narrativeWhat = "Refrigerant micro-leak confirmed via continuous Digital Twin residual tracking.";
+          narrativeWhy = `Compressor cooling rate has degraded 38%. Projected critical threshold breach in ${minutesToBreach}m.`;
+          narrativeAction = `EARLY WARNING: ${minutesToBreach}-minute action window available to dispatch technician and transfer mRNA vaccines before breach occurs.`;
+        } else if (currentT >= 117) {
+          alertStatus = "critical";
+          budgetUsed = 2;
+          alertReason = "CRITICAL EXCURSION: Upper 8.0°C threshold breached. Emergency transfer protocol active!";
+          narrativeWhat = "Critical threshold breach occurred. Cabinet temperature has crossed 8.0°C.";
+          narrativeWhy = "Refrigerant capacity depleted. Passive thermal warming underway.";
+          narrativeAction = "IMMEDIATE EVACUATION: Complete transfer of vaccines to backup bay.";
+        }
+        if (currentT >= 70) {
+          alertLog.push({ t: 70, status: "raised", message: `PREDICTIVE ALERT: Pinhole leak confirmed. Breach expected in ${minutesToBreach}m.` });
+        }
+        if (currentT >= 117) {
+          alertLog.push({ t: 117, status: "critical", message: "CRITICAL BREACH: Temperature crossed 8.0°C threshold." });
+        }
+      } else if (scenarioName === 'sudden_failure') {
+        if (currentT >= 85) {
+          alertStatus = "critical";
+          budgetUsed = 2;
+          alertReason = "Critical compressor stall. Total cooling cessation. Cabinet temperature warming rapidly toward ambient 22°C.";
+          narrativeWhat = "Compressor motor breakdown detected via motor tachometer (0 RPM).";
+          narrativeWhy = "Total refrigeration loss. Temperature climbing along Newton passive warm-up curve toward ambient.";
+          narrativeAction = "IMMEDIATE ACTION: Dispatch emergency response team. Transfer vaccines to cryo-transport box immediately.";
+          alertLog.push({ t: 85, status: "critical", message: "CRITICAL FAILURE: Compressor stalled. Emergency transfer initiated." });
+        }
+      }
+
+      return {
+        scenario: scenarioName,
+        current_tick: currentT,
+        history: history,
+        current_reading: currentReading,
+        slope: slope,
+        projected: projected,
+        cone_upper: coneUpper,
+        cone_lower: coneLower,
+        horizon_probs: horizonProbs,
+        minutes_to_breach: minutesToBreach,
+        event_intelligence: {
+          type: eventType,
+          confidence: eventConfidence,
+          evidence: evidence
+        },
+        alert_state: {
+          status: alertStatus,
+          reason: alertReason,
+          budget_used: budgetUsed
+        },
+        alert_log: alertLog,
+        narrative: {
+          what: narrativeWhat,
+          why: narrativeWhy,
+          action: narrativeAction
+        }
+      };
+    }
+
+    /* -------------------------------------------------------------------------
+       5. CHART.JS INITIALIZATION (Matching Light Visual Identity)
+       ------------------------------------------------------------------------- */
+    function initChart() {
+      const ctx = document.getElementById('hero-chart').getContext('2d');
+
+      heroChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: 240 }, (_, i) => i),
+          datasets: [
+            // 0: Upper Limit (8.0 °C)
+            {
+              label: 'Upper Limit (8.0°C)',
+              data: Array(240).fill(8.0),
+              borderColor: '#f43f5e',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0
+            },
+            // 1: Lower Limit (2.0 °C)
+            {
+              label: 'Lower Limit (2.0°C)',
+              data: Array(240).fill(2.0),
+              borderColor: '#0284c7',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              pointRadius: 0,
+              fill: false,
+              tension: 0
+            },
+            // 2: Observed Air Temperature
+            {
+              label: 'Cabinet Air Probe',
+              data: [],
+              borderColor: '#7c3aed',
+              borderWidth: 3,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#7c3aed',
+              tension: 0.15,
+              spanGaps: true,
+              fill: false
+            },
+            // 3: Projected Trajectory
+            {
+              label: 'Projected Trajectory',
+              data: [],
+              borderColor: '#f59e0b',
+              borderWidth: 2.5,
+              borderDash: [6, 4],
+              pointRadius: 0,
+              tension: 0.05,
+              spanGaps: true,
+              fill: false
+            },
+            // 4: Confidence Cone Upper
+            {
+              label: 'Cone Upper',
+              data: [],
+              borderColor: 'rgba(245, 158, 11, 0.40)',
+              borderWidth: 1.5,
+              borderDash: [3, 3],
+              pointRadius: 0,
+              spanGaps: true,
+              fill: '+1',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)'
+            },
+            // 5: Confidence Cone Lower
+            {
+              label: 'Cone Lower',
+              data: [],
+              borderColor: 'rgba(245, 158, 11, 0.40)',
+              borderWidth: 1.5,
+              borderDash: [3, 3],
+              pointRadius: 0,
+              spanGaps: true,
+              fill: false
+            },
+            // 6: Vaccine Liquid Core (Payload Safe Band)
+            {
+              label: 'Vaccine Core (Safe Liquid)',
+              data: [],
+              borderColor: '#10b981',
+              borderWidth: 2.5,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#10b981',
+              tension: 0.15,
+              spanGaps: true,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: { left: 8, right: 8, top: 10, bottom: 5 }
+          },
+          animation: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+              titleColor: '#0f172a',
+              bodyColor: '#334155',
+              borderColor: '#c4b5fd',
+              borderWidth: 1.5,
+              padding: 10,
+              cornerRadius: 12,
+              titleFont: { family: 'JetBrains Mono', size: 12, weight: 'bold' },
+              bodyFont: { family: 'Plus Jakarta Sans', size: 12, weight: '500' },
+              callbacks: {
+                title: function(items) {
+                  return `Timeline: T+${items[0].label} min`;
+                },
+                label: function(item) {
+                  if (item.datasetIndex === 0) return `Upper Excursion Limit: 8.00°C`;
+                  if (item.datasetIndex === 1) return `Lower Excursion Limit: 2.00°C`;
+                  if (item.datasetIndex === 2) return `Cabinet Air Probe: ${item.raw ? item.raw.toFixed(2) : ''}°C`;
+                  if (item.datasetIndex === 3) return `Projected Mean: ${item.raw ? item.raw.toFixed(2) : ''}°C`;
+                  if (item.datasetIndex === 4) return `95% Upper Cone: ${item.raw ? item.raw.toFixed(2) : ''}°C`;
+                  if (item.datasetIndex === 5) return `95% Lower Cone: ${item.raw ? item.raw.toFixed(2) : ''}°C`;
+                  if (item.datasetIndex === 6) return `Vaccine Core (Liquid): ${item.raw ? item.raw.toFixed(2) : ''}°C [Safe]`;
+                  return `${item.dataset.label}: ${item.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                color: 'rgba(226, 232, 240, 0.7)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#64748b',
+                font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
+                maxTicksLimit: 12,
+                callback: function(val) {
+                  return `T+${val}m`;
+                }
+              }
+            },
+            y: {
+              min: 0.0,
+              max: 14.0,
+              grid: {
+                color: 'rgba(226, 232, 240, 0.7)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#64748b',
+                font: { family: 'JetBrains Mono', size: 11, weight: '600' },
+                stepSize: 2.0,
+                callback: function(val) {
+                  return `${val.toFixed(1)}°C`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* -------------------------------------------------------------------------
+       6. REAL-TIME RENDERING & DASHBOARD SYNC
+       ------------------------------------------------------------------------- */
+    function renderTick(t) {
+      currentT = t;
+      const data = getScenarioData(currentScenario, t);
+
+      // 1. Update Chart Data
+      const observedData = new Array(240).fill(null);
+      const observedVialData = new Array(240).fill(null);
+      data.history.forEach(h => {
+        observedData[h.t] = h.temp;
+        observedVialData[h.t] = h.vial_temp;
+      });
+
+      const projectedData = new Array(240).fill(null);
+      const coneUpperData = new Array(240).fill(null);
+      const coneLowerData = new Array(240).fill(null);
+
+      data.projected.forEach(p => {
+        projectedData[p.t] = p.temp;
+      });
+      data.cone_upper.forEach(u => {
+        coneUpperData[u.t] = u.temp;
+      });
+      data.cone_lower.forEach(l => {
+        coneLowerData[l.t] = l.temp;
+      });
+
+      if (heroChartInstance) {
+        heroChartInstance.data.datasets[2].data = observedData;
+        heroChartInstance.data.datasets[3].data = projectedData;
+        heroChartInstance.data.datasets[4].data = coneUpperData;
+        heroChartInstance.data.datasets[5].data = coneLowerData;
+        heroChartInstance.data.datasets[6].data = observedVialData;
+        heroChartInstance.update();
+      }
+
+      // 2. Telemetry Quick Readouts
+      const liveTempEl = document.getElementById('chart-live-temp');
+      const liveSlopeEl = document.getElementById('chart-live-slope');
+      const compStateEl = document.getElementById('chart-comp-state');
+      const vialTempEl = document.getElementById('chart-vial-temp');
+      const doorStateEl = document.getElementById('chart-door-state');
+
+      liveTempEl.innerText = `${data.current_reading.temp.toFixed(2)}°C`;
+      liveSlopeEl.innerText = `${data.slope >= 0 ? '+' : ''}${data.slope.toFixed(3)} °C/m`;
+      if (vialTempEl) {
+        vialTempEl.innerText = `${data.current_reading.vial_temp.toFixed(2)}°C`;
+      }
+
+      // Door State Indicator
+      if (doorStateEl) {
+        if (data.current_reading.door_open) {
+          doorStateEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5 animate-ping"></span>OPEN (3.2m)`;
+          doorStateEl.className = "text-sm font-black text-amber-600 flex items-center justify-center mt-2";
+        } else {
+          doorStateEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>CLOSED`;
+          doorStateEl.className = "text-sm font-black text-emerald-600 flex items-center justify-center mt-2";
+        }
+      }
+
+      // Compressor State Indicator
+      if (data.current_reading.compressor) {
+        compStateEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>ACTIVE`;
+        compStateEl.className = "text-sm font-black text-emerald-600 flex items-center justify-center mt-2";
+      } else {
+        compStateEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400 mr-1.5"></span>STANDBY`;
+        compStateEl.className = "text-sm font-black text-slate-500 flex items-center justify-center mt-2";
+      }
+
+      // 3. Sim Timeline Clocks
+      document.getElementById('current-sim-time').innerText = `T+${String(t).padStart(3, '0')} min`;
+      const baseHour = 14;
+      const totalMinutes = baseHour * 60 + t;
+      const hh = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
+      const mm = String(totalMinutes % 60).padStart(2, '0');
+      document.getElementById('sim-clock').innerText = `${hh}:${mm}:00 UTC`;
+
+      // 4. Status Pill
+      const statusPill = document.getElementById('status-pill');
+      const statusPillDot = document.getElementById('status-pill-dot');
+      const statusPillText = document.getElementById('status-pill-text');
+
+      if (data.alert_state.status === 'normal' || data.alert_state.status === 'suppressed') {
+        statusPill.className = "flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs";
+        statusPillDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        statusPillText.innerText = `STATUS: SAFE [${data.current_reading.temp.toFixed(1)}°C]`;
+      } else if (data.alert_state.status === 'raised') {
+        statusPill.className = "flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-xs";
+        statusPillDot.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+        statusPillText.innerText = `EARLY WARNING [${data.minutes_to_breach}m]`;
+      } else if (data.alert_state.status === 'critical') {
+        statusPill.className = "flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300 shadow-xs";
+        statusPillDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-pulse";
+        statusPillText.innerText = `CRITICAL EXCURSION`;
+      }
+
+      // 5. Excursion Countdown & Gauges
+      const countdownTimer = document.getElementById('countdown-timer');
+      const countdownLabel = document.getElementById('countdown-label');
+      const countdownSub = document.getElementById('countdown-subtext');
+
+      if (data.minutes_to_breach === null) {
+        countdownTimer.innerText = "NO BREACH";
+        countdownTimer.className = "font-mono text-2xl font-black text-purple-700 tracking-wider num-tabular";
+        countdownLabel.innerText = "TIME TO EXCURSION";
+        countdownSub.innerText = "Safe equilibrium maintained";
+      } else if (data.minutes_to_breach === 0) {
+        countdownTimer.innerText = "EXCURSION";
+        countdownTimer.className = "font-mono text-2xl font-black text-rose-600 tracking-wider num-tabular";
+        countdownLabel.innerText = "BREACH IMMINENT";
+        countdownSub.innerText = "Upper 8.0°C limit breached";
+      } else {
+        const m = data.minutes_to_breach;
+        const s = (59 - (t % 60));
+        countdownTimer.innerText = `${m}:${String(s).padStart(2, '0')}`;
+        countdownTimer.className = "font-mono text-2xl font-black text-amber-600 tracking-wider num-tabular animate-pulse";
+        countdownLabel.innerText = "EARLY WARNING LEAD";
+        countdownSub.innerText = "Until physical 8.0°C breach";
+      }
+
+      // Gauges Update
+      const horizons = [15, 30, 60, 120];
+      horizons.forEach(h => {
+        const prob = data.horizon_probs[h];
+        const arc = document.getElementById(`gauge-arc-${h}`);
+        const val = document.getElementById(`gauge-val-${h}`);
+
+        const offset = 100 - prob;
+        arc.style.strokeDashoffset = offset;
+        val.innerText = `${prob}%`;
+
+        if (prob >= 75) {
+          arc.setAttribute('class', 'gauge-progress stroke-rose-500');
+          val.className = 'absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-rose-600';
+        } else if (prob >= 35) {
+          arc.setAttribute('class', 'gauge-progress stroke-amber-500');
+          val.className = 'absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-amber-600';
+        } else {
+          arc.setAttribute('class', 'gauge-progress stroke-purple-600');
+          val.className = 'absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-purple-700';
+        }
+      });
+
+      // 6. Alert Banners
+      const predBanner = document.getElementById('predictive-alert-banner');
+      const falseBanner = document.getElementById('false-alarm-banner');
+      const critBanner = document.getElementById('critical-alert-banner');
+
+      if (data.alert_state.status === 'raised') {
+        predBanner.classList.remove('hidden');
+        falseBanner.classList.add('hidden');
+        if (critBanner) critBanner.classList.add('hidden');
+        const msgEl = document.getElementById('banner-message');
+        if (msgEl) msgEl.innerText = `Trajectory models project critical 8.0°C threshold breach in ${data.minutes_to_breach} minutes.`;
+        document.getElementById('banner-lead-time').innerText = `Lead: ${data.minutes_to_breach}m`;
+      } else if (data.alert_state.status === 'critical') {
+        if (critBanner) critBanner.classList.remove('hidden');
+        predBanner.classList.add('hidden');
+        falseBanner.classList.add('hidden');
+        const critMsgEl = document.getElementById('critical-banner-message');
+        if (critMsgEl) critMsgEl.innerText = data.alert_state.reason;
+      } else if (data.alert_state.status === 'suppressed') {
+        falseBanner.classList.remove('hidden');
+        predBanner.classList.add('hidden');
+        if (critBanner) critBanner.classList.add('hidden');
+        document.getElementById('false-alarm-reason').innerText = data.alert_state.reason;
+      } else {
+        predBanner.classList.add('hidden');
+        falseBanner.classList.add('hidden');
+        if (critBanner) critBanner.classList.add('hidden');
+      }
+
+      // Sync KPI early warning lead card
+      const kpiLeadEl = document.getElementById('kpi-lead-time');
+      if (kpiLeadEl) {
+        if (data.minutes_to_breach !== null) {
+          kpiLeadEl.innerHTML = `${data.minutes_to_breach} <span class="text-xl font-bold font-sans text-slate-500">min</span>`;
+        } else {
+          kpiLeadEl.innerHTML = `47 <span class="text-xl font-bold font-sans text-slate-500">min</span>`;
+        }
+      }
+
+      // 7. Event Intelligence Badge & Evidence
+      const badge = document.getElementById('event-badge');
+      const bar = document.getElementById('event-confidence-bar');
+      const confText = document.getElementById('event-confidence-text');
+
+      badge.innerText = data.event_intelligence.type.toUpperCase().replace('_', ' ');
+      bar.style.width = `${data.event_intelligence.confidence}%`;
+      confText.innerText = `${data.event_intelligence.confidence}%`;
+
+      const evidenceList = document.getElementById('event-evidence-list');
+      evidenceList.innerHTML = data.event_intelligence.evidence.map(item => `
+        <li class="flex items-center space-x-2.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0"></span>
+          <span>${item}</span>
+        </li>
+      `).join('');
+
+      // 8. Alert Feed & Budget
+      const budgetSeg1 = document.getElementById('budget-seg-1');
+      const budgetSeg2 = document.getElementById('budget-seg-2');
+      const budgetSeg3 = document.getElementById('budget-seg-3');
+      const budgetUsedText = document.getElementById('budget-used-text');
+
+      const used = data.alert_state.budget_used;
+      budgetUsedText.innerText = `${used}/3`;
+      budgetSeg1.className = `w-3 h-2 rounded-sm ${used >= 1 ? 'bg-amber-500 shadow-sm' : 'bg-slate-300'}`;
+      budgetSeg2.className = `w-3 h-2 rounded-sm ${used >= 2 ? 'bg-rose-500 shadow-sm' : 'bg-slate-300'}`;
+      budgetSeg3.className = `w-3 h-2 rounded-sm ${used >= 3 ? 'bg-rose-600 shadow-sm' : 'bg-slate-300'}`;
+
+      const alertLogList = document.getElementById('alert-log-list');
+      alertLogList.innerHTML = data.alert_log.slice().reverse().map(item => {
+        let tagClass = 'text-purple-600 font-bold';
+        let bgClass = 'bg-slate-50 border-slate-200/80 text-slate-700';
+        if (item.status === 'suppressed') {
+          tagClass = 'text-emerald-700 font-bold';
+          bgClass = 'bg-emerald-50/70 border-emerald-200 text-emerald-900';
+        } else if (item.status === 'raised') {
+          tagClass = 'text-amber-700 font-bold';
+          bgClass = 'bg-amber-50/70 border-amber-200 text-amber-900';
+        } else if (item.status === 'critical') {
+          tagClass = 'text-rose-700 font-bold';
+          bgClass = 'bg-rose-50/70 border-rose-200 text-rose-900';
+        }
+        return `
+          <div class="p-2.5 rounded-xl ${bgClass} border flex items-center justify-between text-xs">
+            <span class="text-slate-400 font-medium shrink-0 mr-2 text-[11px] font-mono">T+${String(item.t).padStart(3, '0')}m</span>
+            <span class="truncate flex-1 font-medium">${item.message}</span>
+            <span class="${tagClass} text-[11px] uppercase font-bold ml-2 shrink-0">${item.status}</span>
+          </div>
+        `;
+      }).join('');
+
+      // 9. AI Narrator Panel
+      document.getElementById('narrative-what').innerText = data.narrative.what;
+      document.getElementById('narrative-why').innerText = data.narrative.why;
+      document.getElementById('narrative-action').innerText = data.narrative.action;
+
+      // 10. Update Scenario Explainer Card
+      const meta = SCENARIO_META[currentScenario] || SCENARIO_META['normal'];
+      const expBadge = document.getElementById('explainer-badge');
+      const expStatus = document.getElementById('explainer-status-tag');
+      const expTitle = document.getElementById('explainer-title');
+      const expDesc = document.getElementById('explainer-desc');
+      const expLegacy = document.getElementById('explainer-legacy');
+      const expCryo = document.getElementById('explainer-cryoguard');
+      const btnJumpText = document.getElementById('btn-jump-text');
+
+      if (expBadge) expBadge.innerText = meta.title;
+      if (expStatus) expStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-${meta.statusColor}-500 mr-1.5 animate-pulse"></span>${meta.statusTag}`;
+      if (expTitle) expTitle.innerText = meta.title;
+      if (expDesc) expDesc.innerText = meta.desc;
+      if (expLegacy) expLegacy.innerText = meta.legacy;
+      if (expCryo) expCryo.innerText = meta.cryoguard;
+      if (btnJumpText) btnJumpText.innerText = meta.jumpText;
+
+      // 11. Slider Sync
+      const slider = document.getElementById('time-slider');
+      slider.value = t;
+      document.getElementById('slider-val').innerText = `T+${t}`;
+    }
+
+    /* -------------------------------------------------------------------------
+       7. SCENARIO CONTROLS & INTERACTION
+       ------------------------------------------------------------------------- */
+    function selectScenario(name) {
+      currentScenario = name;
+      updateScenarioHighlight(name);
+      resetReplay();
+
+      if (window.isPythonBackendAvailable) {
+        const scenarioMap = {
+          'normal': 'nominal',
+          'gradual_drift': 'early_warning',
+          'door_opening': 'door_opening',
+          'defrost_cycle': 'defrost_cycle',
+          'sudden_failure': 'compressor_failure',
+          'sensor_spike': 'sensor_spike'
+        };
+        const pyScenario = scenarioMap[name] || 'early_warning';
+        fetch('/api/replay/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scenario: pyScenario, speed: playSpeed })
+        }).catch(e => console.warn(e));
+      }
+    }
+
+    function jumpToScenarioEvent() {
+      const meta = SCENARIO_META[currentScenario] || SCENARIO_META['normal'];
+      currentT = meta.eventTick;
+      renderTick(currentT);
+    }
+
+    function updateScenarioHighlight(name) {
+      const scenarioButtons = ['normal', 'door_opening', 'defrost_cycle', 'sensor_spike', 'gradual_drift', 'sudden_failure'];
+      scenarioButtons.forEach(s => {
+        const btn = document.getElementById(`btn-scen-${s}`);
+        if (!btn) return;
+        if (s === name) {
+          btn.className = "btn-lift px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-md shadow-purple-500/25 transition whitespace-nowrap";
+        } else {
+          btn.className = "btn-lift px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-700 border border-purple-100 hover:border-purple-300 hover:text-purple-700 transition whitespace-nowrap flex items-center space-x-1.5";
+        }
+      });
+    }
+
+    function togglePlayPause() {
+      isPlaying = !isPlaying;
+      const btn = document.getElementById('btn-play-pause');
+      const icon = document.getElementById('play-pause-icon');
+      const text = document.getElementById('play-pause-text');
+
+      if (isPlaying) {
+        icon.innerText = "⏸";
+        text.innerText = "PAUSE";
+        btn.className = "btn-lift px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-amber-500/25 transition whitespace-nowrap";
+        playInterval = setInterval(playTick, 1000 / playSpeed);
+      } else {
+        icon.innerText = "▶";
+        text.innerText = "PLAY";
+        btn.className = "btn-lift px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-purple-500/25 transition whitespace-nowrap";
+        clearInterval(playInterval);
+      }
+    }
+
+    async function playTick() {
+      if (currentT < 239) {
+        currentT++;
+        if (window.isServerStreamActive && window.isPythonBackendAvailable) {
+          try {
+            const res = await fetch('/api/replay/tick');
+            if (res.ok) {
+              const streamData = await res.json();
+              if (streamData.tick !== undefined) {
+                currentT = streamData.tick;
+              }
+            }
+          } catch (e) {
+            console.warn("Replay stream tick fallback:", e);
+          }
+        }
+        renderTick(currentT);
+      } else {
+        togglePlayPause();
+      }
+    }
+
+    function setSpeed(speed) {
+      playSpeed = speed;
+      [1, 5, 20].forEach(s => {
+        const btn = document.getElementById(`btn-spd-${s}`);
+        if (s === speed) {
+          btn.className = "px-2.5 py-1 bg-purple-600 text-white font-bold";
+        } else {
+          btn.className = "px-2.5 py-1 text-slate-600 hover:text-purple-700 font-bold";
+        }
+      });
+
+      if (isPlaying) {
+        clearInterval(playInterval);
+        playInterval = setInterval(playTick, 1000 / playSpeed);
+      }
+    }
+
+    function onSliderChange(value) {
+      currentT = parseInt(value);
+      renderTick(currentT);
+    }
+
+    function resetReplay() {
+      if (isPlaying) togglePlayPause();
+      currentT = 0;
+      renderTick(0);
+      if (window.isPythonBackendAvailable) {
+        fetch('/api/replay/reset').catch(e => console.warn(e));
+      }
+    }
+
+    function openPresetsModal() {
+      document.getElementById('presets-modal').classList.remove('hidden');
+    }
+
+    function closePresetsModal() {
+      document.getElementById('presets-modal').classList.add('hidden');
+    }
+
+    function openGuideModal() {
+      document.getElementById('guide-modal').classList.remove('hidden');
+    }
+
+    function closeGuideModal() {
+      document.getElementById('guide-modal').classList.add('hidden');
+    }
+
+    function applyPreset(presetKey) {
+      closePresetsModal();
+      if (presetKey === 'A') {
+        currentScenario = 'normal';
+        updateScenarioHighlight('normal');
+        renderTick(30);
+      } else if (presetKey === 'B') {
+        currentScenario = 'door_opening';
+        updateScenarioHighlight('door_opening');
+        renderTick(73);
+      } else if (presetKey === 'C') {
+        currentScenario = 'gradual_drift';
+        updateScenarioHighlight('gradual_drift');
+        renderTick(148);
+      } else if (presetKey === 'D') {
+        currentScenario = 'sudden_failure';
+        updateScenarioHighlight('sudden_failure');
+        renderTick(104);
+      }
+    }
+
+    function toggleCleanMode(forceState) {
+      if (forceState !== undefined) {
+        isCleanMode = forceState;
+      } else {
+        isCleanMode = !isCleanMode;
+      }
+
+      if (isCleanMode) {
+        document.body.classList.add('clean-mode');
+      } else {
+        document.body.classList.remove('clean-mode');
+      }
+    }
+
+    /* -------------------------------------------------------------------------
+       8. PYTHON DIGITAL TWIN ENGINE & LIVE TELEMETRY LAB
+       ------------------------------------------------------------------------- */
+    window.isPythonBackendAvailable = false;
+    window.isServerStreamActive = false;
+    window.lastPythonEvaluation = null;
+    let isSandboxCollapsed = false;
+    let activeSbTab = 'synth';
+    let sbDoorState = 0;
+    let sbCompState = 1;
+
+    async function initPythonEngineCheck() {
+      const badge = document.getElementById('sb-conn-badge');
+      const navPill = document.getElementById('backend-status-pill');
+      const navDot = document.getElementById('backend-status-dot');
+      const navText = document.getElementById('backend-status-text');
+
+      try {
+        const start = performance.now();
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          const latency = Math.round(performance.now() - start);
+          window.isPythonBackendAvailable = true;
+
+          if (badge) {
+            badge.className = "px-3 py-1 rounded-full text-xs font-bold font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-1.5";
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>FastAPI Connected (${latency}ms) · Python 3.12 Digital Twin Active</span>`;
+          }
+          if (navPill) {
+            navPill.className = "hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-xs";
+            navDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+            navText.innerText = `PYTHON TWIN: ONLINE (${latency}ms)`;
+          }
+
+          // Automatically run initial evaluation for default parameters
+          evaluateCustomTelemetry();
+        } else {
+          throw new Error('Health check returned non-200');
+        }
+      } catch (err) {
+        window.isPythonBackendAvailable = false;
+        if (badge) {
+          badge.className = "px-3 py-1 rounded-full text-xs font-bold font-mono bg-amber-50 text-amber-800 border border-amber-200 flex items-center space-x-1.5";
+          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Client Simulation Mode (FastAPI Offline)</span>`;
+        }
+        if (navPill) {
+          navPill.className = "hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 shadow-xs";
+          navDot.className = "w-2 h-2 rounded-full bg-amber-500";
+          navText.innerText = "CLIENT MODE (STANDALONE)";
+        }
+      }
+    }
+
+    function togglePythonSandbox() {
+      const card = document.getElementById('python-sandbox-card');
+      if (!card) return;
+      if (isSandboxCollapsed) {
+        toggleSandboxCollapse();
+      }
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      card.classList.add('ring-4', 'ring-purple-400/50');
+      setTimeout(() => {
+        card.classList.remove('ring-4', 'ring-purple-400/50');
+      }, 1500);
+    }
+
+    function toggleSandboxCollapse() {
+      isSandboxCollapsed = !isSandboxCollapsed;
+      const body = document.getElementById('sb-body-content');
+      const icon = document.getElementById('sb-collapse-icon');
+      if (isSandboxCollapsed) {
+        body.classList.add('hidden');
+        icon.classList.add('rotate-180');
+      } else {
+        body.classList.remove('hidden');
+        icon.classList.remove('rotate-180');
+      }
+    }
+
+    function switchSandboxTab(tab) {
+      activeSbTab = tab;
+      const tabs = ['synth', 'batch', 'stream'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`sb-tab-btn-${t}`);
+        const content = document.getElementById(`sb-tab-${t}`);
+        if (t === tab) {
+          btn.className = "px-3.5 py-1.5 rounded-lg bg-white text-purple-700 shadow-sm transition";
+          if (content) content.classList.remove('hidden');
+        } else {
+          btn.className = "px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-purple-700 transition";
+          if (content) content.classList.add('hidden');
+        }
+      });
+    }
+
+    function syncSbTemp(val) {
+      const badge = document.getElementById('sb-temp-badge');
+      const num = parseFloat(val);
+      badge.innerText = `${num.toFixed(2)}°C`;
+      if (num > 8.0) {
+        badge.className = "font-mono text-xs font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-800";
+      } else if (num < 2.0) {
+        badge.className = "font-mono text-xs font-black px-2 py-0.5 rounded-md bg-sky-100 text-sky-800";
+      } else {
+        badge.className = "font-mono text-xs font-black px-2 py-0.5 rounded-md bg-purple-100 text-purple-800";
+      }
+    }
+
+    function syncSbAmbient(val) {
+      document.getElementById('sb-ambient-badge').innerText = `${parseFloat(val).toFixed(2)}°C`;
+    }
+
+    function syncSbDoorDur(val) {
+      document.getElementById('sb-door-dur-badge').innerText = `${parseInt(val)}s`;
+    }
+
+    function setSbDoor(state) {
+      sbDoorState = state;
+      const btnClosed = document.getElementById('sb-btn-door-closed');
+      const btnOpen = document.getElementById('sb-btn-door-open');
+      if (state === 1) {
+        btnOpen.className = "py-2 rounded-xl text-xs font-bold bg-amber-600 text-white shadow-sm transition";
+        btnClosed.className = "py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition";
+        if (parseInt(document.getElementById('sb-door-dur-slider').value) === 0) {
+          document.getElementById('sb-door-dur-slider').value = 180;
+          syncSbDoorDur(180);
+        }
+      } else {
+        btnClosed.className = "py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition";
+        btnOpen.className = "py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition";
+        document.getElementById('sb-door-dur-slider').value = 0;
+        syncSbDoorDur(0);
+      }
+    }
+
+    function setSbComp(state) {
+      sbCompState = state;
+      const btnOn = document.getElementById('sb-btn-comp-on');
+      const btnOff = document.getElementById('sb-btn-comp-off');
+      if (state === 1) {
+        btnOn.className = "py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-sm transition";
+        btnOff.className = "py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition";
+        document.getElementById('sb-current-input').value = 2.6;
+      } else {
+        btnOff.className = "py-2 rounded-xl text-xs font-bold bg-slate-600 text-white shadow-sm transition";
+        btnOn.className = "py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition";
+        document.getElementById('sb-current-input').value = 0.1;
+      }
+    }
+
+    function applySandboxPreset(preset) {
+      if (preset === 'leak') {
+        document.getElementById('sb-temp-slider').value = 6.2;
+        syncSbTemp(6.2);
+        document.getElementById('sb-ambient-slider').value = 25.0;
+        syncSbAmbient(25.0);
+        setSbDoor(0);
+        setSbComp(1);
+        document.getElementById('sb-duty-slider').value = 95;
+        document.getElementById('sb-duty-badge').innerText = '95%';
+        document.getElementById('sb-evap-input').value = -0.5;
+        document.getElementById('sb-evap-badge').innerText = '-0.50°C';
+      } else if (preset === 'door') {
+        document.getElementById('sb-temp-slider').value = 6.8;
+        syncSbTemp(6.8);
+        document.getElementById('sb-ambient-slider').value = 24.0;
+        syncSbAmbient(24.0);
+        setSbDoor(1);
+        document.getElementById('sb-door-dur-slider').value = 240;
+        syncSbDoorDur(240);
+        setSbComp(1);
+        document.getElementById('sb-duty-slider').value = 85;
+        document.getElementById('sb-duty-badge').innerText = '85%';
+        document.getElementById('sb-evap-input').value = -1.5;
+        document.getElementById('sb-evap-badge').innerText = '-1.50°C';
+      } else if (preset === 'failure') {
+        document.getElementById('sb-temp-slider').value = 5.5;
+        syncSbTemp(5.5);
+        document.getElementById('sb-ambient-slider').value = 28.0;
+        syncSbAmbient(28.0);
+        setSbDoor(0);
+        setSbComp(0);
+        document.getElementById('sb-duty-slider').value = 0;
+        document.getElementById('sb-duty-badge').innerText = '0%';
+        document.getElementById('sb-evap-input').value = 14.0;
+        document.getElementById('sb-evap-badge').innerText = '14.00°C';
+      } else if (preset === 'heatwave') {
+        document.getElementById('sb-temp-slider').value = 4.8;
+        syncSbTemp(4.8);
+        document.getElementById('sb-ambient-slider').value = 39.5;
+        syncSbAmbient(39.5);
+        setSbDoor(0);
+        setSbComp(1);
+        document.getElementById('sb-duty-slider').value = 100;
+        document.getElementById('sb-duty-badge').innerText = '100%';
+        document.getElementById('sb-evap-input').value = -0.5;
+        document.getElementById('sb-evap-badge').innerText = '-0.50°C';
+      } else if (preset === 'normal') {
+        document.getElementById('sb-temp-slider').value = 4.1;
+        syncSbTemp(4.1);
+        document.getElementById('sb-ambient-slider').value = 21.0;
+        syncSbAmbient(21.0);
+        setSbDoor(0);
+        setSbComp(1);
+        document.getElementById('sb-duty-slider').value = 45;
+        document.getElementById('sb-duty-badge').innerText = '45%';
+        document.getElementById('sb-evap-input').value = -3.5;
+        document.getElementById('sb-evap-badge').innerText = '-3.50°C';
+      }
+      evaluateCustomTelemetry();
+    }
+
+    async function evaluateCustomTelemetry() {
+      const spinner = document.getElementById('sb-eval-spinner');
+      const btnText = document.getElementById('sb-eval-btn-text');
+      if (spinner) spinner.classList.remove('hidden');
+      if (btnText) btnText.innerText = "Evaluating via Python...";
+
+      const payload = {
+        unit: document.getElementById('sb-unit').value || "Unit-02 (Bay 1)",
+        temp_fridge_c: parseFloat(document.getElementById('sb-temp-slider').value),
+        ambient_temp_c: parseFloat(document.getElementById('sb-ambient-slider').value),
+        door_open: sbDoorState,
+        door_open_duration_sec: parseFloat(document.getElementById('sb-door-dur-slider').value),
+        compressor_state: sbCompState,
+        compressor_current_a: parseFloat(document.getElementById('sb-current-input').value || 2.5),
+        duty_cycle_15m: parseFloat(document.getElementById('sb-duty-slider').value) / 100.0,
+        evaporator_temp_c: parseFloat(document.getElementById('sb-evap-input').value || -2.5)
+      };
+
+      const start = performance.now();
+      try {
+        const res = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const latency = Math.round(performance.now() - start);
+
+        window.lastPythonEvaluation = data;
+
+        // Render response metrics
+        document.getElementById('sb-out-latency').innerText = `${latency}ms response`;
+        const residVal = data.digital_twin.residual_c;
+        const residEl = document.getElementById('sb-out-residual');
+        residEl.innerText = `${residVal >= 0 ? '+' : ''}${residVal.toFixed(3)} °C/m`;
+        if (Math.abs(residVal) <= 0.05) {
+          residEl.className = "text-lg font-black text-emerald-300 num-tabular";
+        } else if (Math.abs(residVal) <= 0.25) {
+          residEl.className = "text-lg font-black text-amber-300 num-tabular";
+        } else {
+          residEl.className = "text-lg font-black text-rose-300 num-tabular";
+        }
+
+        const driftVal = data.digital_twin.health_index;
+        const healthPercent = Math.max(0, Math.min(100, Math.round((1.0 - driftVal) * 100)));
+        const healthEl = document.getElementById('sb-out-health');
+        const healthSubEl = document.getElementById('sb-out-health-sub');
+        healthEl.innerText = `${healthPercent}%`;
+        if (healthSubEl) healthSubEl.innerText = `(${driftVal.toFixed(3)} drift)`;
+        if (healthPercent >= 90) {
+          healthEl.className = "text-lg font-black text-emerald-300 num-tabular";
+        } else if (healthPercent >= 60) {
+          healthEl.className = "text-lg font-black text-amber-300 num-tabular";
+        } else {
+          healthEl.className = "text-lg font-black text-rose-300 num-tabular";
+        }
+
+        document.getElementById('sb-out-drift-cool').innerText = `${data.digital_twin.cooling_drift.toFixed(2)} °C/min`;
+        document.getElementById('sb-out-drift-ua').innerText = `${data.digital_twin.ua_drift >= 0 ? '+' : ''}${data.digital_twin.ua_drift.toFixed(2)} W/°C`;
+
+        document.getElementById('sb-out-r15').innerText = `${Math.round(data.risk_horizons['15m'] * 100)}%`;
+        document.getElementById('sb-out-r30').innerText = `${Math.round(data.risk_horizons['30m'] * 100)}%`;
+        document.getElementById('sb-out-r60').innerText = `${Math.round(data.risk_horizons['60m'] * 100)}%`;
+        document.getElementById('sb-out-r120').innerText = `${Math.round(data.risk_horizons['120m'] * 100)}%`;
+
+        const tierEl = document.getElementById('sb-out-tier');
+        const breachEl = document.getElementById('sb-out-breach');
+        const instrEl = document.getElementById('sb-out-instruction');
+
+        tierEl.innerText = data.door_action.tier.replace(/_/g, ' ');
+        if (data.door_action.tier.includes('CRITICAL')) {
+          tierEl.className = "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-rose-500 text-white animate-pulse";
+        } else if (data.door_action.tier.includes('NOTICE')) {
+          tierEl.className = "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-amber-500 text-white";
+        } else {
+          tierEl.className = "text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500 text-white";
+        }
+
+        if (data.time_to_breach_min !== null) {
+          breachEl.innerText = `Breach in ${data.time_to_breach_min.toFixed(1)}m`;
+          breachEl.className = "text-xs font-mono font-black text-rose-300";
+        } else {
+          breachEl.innerText = "No Excursion Breach";
+          breachEl.className = "text-xs font-mono font-black text-emerald-300";
+        }
+
+        instrEl.innerText = data.door_action.instruction;
+
+        // Raw JSON viewer
+        document.getElementById('sb-raw-json').innerText = JSON.stringify(data, null, 2);
+
+      } catch (err) {
+        console.warn("Python evaluate error:", err);
+        document.getElementById('sb-out-latency').innerText = `Fallback client`;
+      } finally {
+        if (spinner) spinner.classList.add('hidden');
+        if (btnText) btnText.innerText = "⚡ Run Python Digital Twin (POST /api/predict)";
+      }
+    }
+
+    function plotCustomOnHeroChart() {
+      if (!window.lastPythonEvaluation || !heroChartInstance) {
+        evaluateCustomTelemetry().then(() => {
+          if (window.lastPythonEvaluation) plotCustomOnHeroChart();
+        });
+        return;
+      }
+
+      const evalData = window.lastPythonEvaluation;
+      const traj = evalData.projected_trajectory;
+
+      // Update Hero Chart dataset 3 (projected), 4 (cone upper), 5 (cone lower)
+      const projectedData = new Array(240).fill(null);
+      const coneUpperData = new Array(240).fill(null);
+      const coneLowerData = new Array(240).fill(null);
+
+      const startT = currentT;
+      // Populate every integer minute for uninterrupted smooth curve
+      for (let m = 0; m <= 120; m++) {
+        const absT = startT + m;
+        if (absT < 240) {
+          const idx1 = Math.floor(m / 2);
+          const idx2 = Math.min(traj.length - 1, Math.ceil(m / 2));
+          const p1 = traj[idx1];
+          const p2 = traj[idx2];
+          const frac = (m % 2) / 2.0;
+          const tempVal = p1.temp_c + (p2.temp_c - p1.temp_c) * frac;
+          const upperVal = p1.upper_cone_c + (p2.upper_cone_c - p1.upper_cone_c) * frac;
+          const lowerVal = p1.lower_cone_c + (p2.lower_cone_c - p1.lower_cone_c) * frac;
+
+          projectedData[absT] = Math.round(tempVal * 100) / 100;
+          coneUpperData[absT] = Math.round(upperVal * 100) / 100;
+          coneLowerData[absT] = Math.round(lowerVal * 100) / 100;
+        }
+      }
+
+      // Ensure observed line connects to current reading
+      const obs = heroChartInstance.data.datasets[2].data.slice();
+      for (let i = 0; i <= startT; i++) {
+        if (obs[i] === null) {
+          obs[i] = evalData.current_temp;
+        }
+      }
+      obs[startT] = evalData.current_temp;
+      heroChartInstance.data.datasets[2].data = obs;
+
+      heroChartInstance.data.datasets[3].data = projectedData;
+      heroChartInstance.data.datasets[4].data = coneUpperData;
+      heroChartInstance.data.datasets[5].data = coneLowerData;
+      heroChartInstance.update();
+
+      // Sync primary readouts
+      document.getElementById('chart-live-temp').innerText = `${evalData.current_temp.toFixed(2)}°C`;
+      document.getElementById('chart-live-slope').innerText = `${evalData.rate_c_per_min >= 0 ? '+' : ''}${evalData.rate_c_per_min.toFixed(3)} °C/m`;
+
+      // Update gauges
+      const horizons = [15, 30, 60, 120];
+      horizons.forEach(h => {
+        const prob = Math.round(evalData.risk_horizons[`${h}m`] * 100);
+        const arc = document.getElementById(`gauge-arc-${h}`);
+        const val = document.getElementById(`gauge-val-${h}`);
+        if (arc && val) {
+          arc.style.strokeDashoffset = 100 - prob;
+          val.innerText = `${prob}%`;
+          if (prob >= 75) {
+            arc.setAttribute('class', 'gauge-progress stroke-rose-500');
+            val.className = 'absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-rose-600';
+          } else if (prob >= 35) {
+            arc.setAttribute('class', 'gauge-progress stroke-amber-500');
+            val.className = 'absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-amber-600';
+          } else {
+            arc.setAttribute('class', 'gauge-progress stroke-purple-600');
+            val.className = 'absolute inset-0 flex items-center justify-center font-mono font-black text-xs text-purple-700';
+          }
+        }
+      });
+
+      // Update status pill
+      const statusPill = document.getElementById('status-pill');
+      const statusPillText = document.getElementById('status-pill-text');
+      if (evalData.risk_level === 'CRITICAL') {
+        statusPill.className = "flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300 shadow-xs";
+        statusPillText.innerText = `CRITICAL [${evalData.current_temp.toFixed(1)}°C]`;
+      } else if (evalData.risk_level === 'WARNING' || evalData.risk_level === 'ELEVATED') {
+        statusPill.className = "flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-xs";
+        statusPillText.innerText = `WARNING [${evalData.current_temp.toFixed(1)}°C]`;
+      } else {
+        statusPill.className = "flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs";
+        statusPillText.innerText = `SAFE [${evalData.current_temp.toFixed(1)}°C]`;
+      }
+
+      // Update countdown timer card
+      const countdownTimer = document.getElementById('countdown-timer');
+      const countdownLabel = document.getElementById('countdown-label');
+      const countdownSub = document.getElementById('countdown-subtext');
+      const countdownCard = document.getElementById('countdown-card');
+
+      if (evalData.time_to_breach_min === null || evalData.time_to_breach_min >= 999.0) {
+        countdownTimer.innerText = "NO BREACH";
+        countdownTimer.className = "font-mono text-2xl font-black text-purple-700 tracking-wider num-tabular";
+        countdownLabel.innerText = "TIME TO EXCURSION";
+        countdownSub.innerText = "Safe equilibrium maintained";
+        if (countdownCard) countdownCard.className = "w-full sm:w-[170px] shrink-0 p-4 rounded-2xl bg-purple-50/70 border border-purple-200 shadow-sm flex flex-col justify-between";
+      } else if (evalData.time_to_breach_min <= 0.0) {
+        countdownTimer.innerText = "EXCURSION";
+        countdownTimer.className = "font-mono text-2xl font-black text-rose-600 tracking-wider num-tabular";
+        countdownLabel.innerText = "BREACH ACTIVE";
+        countdownSub.innerText = "Upper 8.0°C limit breached";
+        if (countdownCard) countdownCard.className = "w-full sm:w-[170px] shrink-0 p-4 rounded-2xl bg-rose-50 border border-rose-300 shadow-sm flex flex-col justify-between";
+      } else {
+        const m = Math.floor(evalData.time_to_breach_min);
+        const s = Math.round((evalData.time_to_breach_min - m) * 60);
+        countdownTimer.innerText = `${m}:${String(s).padStart(2, '0')}`;
+        countdownTimer.className = "font-mono text-2xl font-black text-amber-600 tracking-wider num-tabular animate-pulse";
+        countdownLabel.innerText = "EARLY WARNING LEAD";
+        countdownSub.innerText = "Until physical 8.0°C breach";
+        if (countdownCard) countdownCard.className = "w-full sm:w-[170px] shrink-0 p-4 rounded-2xl bg-amber-50 border border-amber-300 shadow-sm flex flex-col justify-between";
+      }
+
+      // Update KPI Lead Time card
+      const kpiLeadEl = document.getElementById('kpi-lead-time');
+      if (kpiLeadEl) {
+        if (evalData.time_to_breach_min && evalData.time_to_breach_min < 999.0) {
+          kpiLeadEl.innerHTML = `${Math.round(evalData.time_to_breach_min)} <span class="text-xl font-bold font-sans text-slate-500">min</span>`;
+        } else {
+          kpiLeadEl.innerHTML = `>120 <span class="text-xl font-bold font-sans text-slate-500">min</span>`;
+        }
+      }
+
+      // Smooth scroll to chart
+      const chartEl = document.getElementById('heroChart');
+      if (chartEl) chartEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function toggleJsonDrawer() {
+      const drawer = document.getElementById('sb-json-drawer');
+      const arrow = document.getElementById('sb-json-arrow');
+      if (drawer.classList.contains('hidden')) {
+        drawer.classList.remove('hidden');
+        arrow.innerText = "▲ Collapse";
+      } else {
+        drawer.classList.add('hidden');
+        arrow.innerText = "▼ Expand";
+      }
+    }
+
+    function loadBatchSample(type) {
+      const textarea = document.getElementById('sb-batch-input');
+      if (type === 'refrigerant_leak') {
+        textarea.value = `timestamp,temp_fridge_c,ambient_temp_c,door_open,door_open_duration_sec,compressor_state,duty_cycle_15m
+2026-10-16T14:00:00Z,4.2,22.0,0,0,1,0.50
+2026-10-16T14:10:00Z,4.9,22.5,0,0,1,0.75
+2026-10-16T14:20:00Z,5.7,23.0,0,0,1,0.95
+2026-10-16T14:30:00Z,6.6,23.5,0,0,1,0.98
+2026-10-16T14:40:00Z,7.4,24.0,0,0,1,1.00
+2026-10-16T14:50:00Z,8.3,24.5,0,0,1,1.00`;
+      } else if (type === 'door_restock') {
+        textarea.value = `timestamp,temp_fridge_c,ambient_temp_c,door_open,door_open_duration_sec,compressor_state,duty_cycle_15m
+2026-10-16T14:00:00Z,4.1,21.5,0,0,1,0.40
+2026-10-16T14:01:00Z,4.7,21.5,1,60,1,0.60
+2026-10-16T14:02:00Z,5.5,21.8,1,120,1,0.75
+2026-10-16T14:03:00Z,6.4,22.0,1,180,1,0.85
+2026-10-16T14:04:00Z,7.3,22.0,1,240,1,0.90
+2026-10-16T14:05:00Z,5.8,22.0,0,0,1,0.90`;
+      } else {
+        textarea.value = `timestamp,temp_fridge_c,ambient_temp_c,door_open,door_open_duration_sec,compressor_state,duty_cycle_15m
+2026-10-16T14:00:00Z,4.12,21.0,0,0,1,0.45
+2026-10-16T14:15:00Z,4.35,21.2,0,0,0,0.40
+2026-10-16T14:30:00Z,4.08,21.0,0,0,1,0.45
+2026-10-16T14:45:00Z,4.40,21.4,0,0,0,0.40`;
+      }
+    }
+
+    async function runBatchPrediction() {
+      const text = document.getElementById('sb-batch-input').value.trim();
+      if (!text) {
+        alert("Please enter or load CSV data first.");
+        return;
+      }
+      const lines = text.split('\n');
+      if (lines.length < 2) {
+        alert("CSV must have a header line and at least one data row.");
+        return;
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      const readings = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const vals = lines[i].split(',').map(v => v.trim());
+        const row = {};
+        headers.forEach((h, idx) => {
+          row[h] = vals[idx];
+        });
+
+        readings.push({
+          unit: "Batch-Unit",
+          temp_fridge_c: parseFloat(row['temp_fridge_c'] || 4.5),
+          ambient_temp_c: parseFloat(row['ambient_temp_c'] || 22.0),
+          door_open: parseInt(row['door_open'] || 0),
+          door_open_duration_sec: parseFloat(row['door_open_duration_sec'] || 0.0),
+          compressor_state: parseInt(row['compressor_state'] || 1),
+          duty_cycle_15m: parseFloat(row['duty_cycle_15m'] || 0.5)
+        });
+      }
+
+      document.getElementById('sb-batch-status').innerText = `Sending ${readings.length} readings to Python /api/batch-predict...`;
+
+      try {
+        const res = await fetch('/api/batch-predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ readings: readings })
+        });
+        const batchData = await res.json();
+
+        document.getElementById('sb-batch-results-wrap').classList.remove('hidden');
+        document.getElementById('sb-batch-count').innerText = batchData.count;
+        document.getElementById('sb-batch-max-temp').innerText = `${batchData.summary.max_temp.toFixed(2)}°C`;
+        document.getElementById('sb-batch-crit-count').innerText = batchData.summary.critical_count;
+
+        const tbody = document.getElementById('sb-batch-table-body');
+        tbody.innerHTML = batchData.results.map((r, i) => {
+          let lvlClass = "text-emerald-700 bg-emerald-50 border-emerald-200";
+          if (r.risk_level === 'CRITICAL') lvlClass = "text-rose-700 bg-rose-50 border-rose-200 font-bold";
+          else if (r.risk_level === 'WARNING') lvlClass = "text-amber-700 bg-amber-50 border-amber-200 font-bold";
+          return `
+            <tr class="hover:bg-purple-50/40 transition">
+              <td class="p-2">${i+1}</td>
+              <td class="p-2 font-bold">${r.current_temp.toFixed(2)}°C</td>
+              <td class="p-2">${r.ambient_temp.toFixed(2)}°C</td>
+              <td class="p-2">${r.digital_twin.residual_c >= 0 ? '+' : ''}${r.digital_twin.residual_c.toFixed(3)}</td>
+              <td class="p-2">${Math.round(r.risk_horizons['30m'] * 100)}%</td>
+              <td class="p-2"><span class="px-2 py-0.5 rounded border text-[10px] ${lvlClass}">${r.risk_level}</span></td>
+              <td class="p-2 text-[11px]">${r.door_action.tier}</td>
+            </tr>
+          `;
+        }).join('');
+
+        document.getElementById('sb-batch-status').innerText = `Batch evaluated by Python in real time. Total points: ${batchData.count}`;
+
+      } catch (err) {
+        alert("Batch evaluate error: " + err.message);
+      }
+    }
+
+    function toggleServerStream() {
+      window.isServerStreamActive = !window.isServerStreamActive;
+      const dot = document.getElementById('sb-stream-toggle-dot');
+      const text = document.getElementById('sb-stream-toggle-text');
+      if (window.isServerStreamActive) {
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+        text.innerText = "Active Stream: Python Server-Driven (/api/replay/tick)";
+      } else {
+        dot.className = "w-2 h-2 rounded-full bg-slate-400";
+        text.innerText = "Stream Inactive (Client-Side Fallback)";
+      }
+    }
+
+    async function resetServerStream() {
+      try {
+        await fetch('/api/replay/reset');
+        resetReplay();
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        togglePlayPause();
+      } else if (e.key === 'p' || e.key === 'P') {
+        openPresetsModal();
+      } else if (e.key === 'g' || e.key === 'G' || e.key === '?') {
+        openGuideModal();
+      } else if (e.key === 'j' || e.key === 'J') {
+        jumpToScenarioEvent();
+      } else if (e.key === 's' || e.key === 'S') {
+        toggleCleanMode();
+      } else if (e.key === 'Escape') {
+        closePresetsModal();
+        closeGuideModal();
+      } else if (e.key >= '1' && e.key <= '6') {
+        const mapping = ['normal', 'door_opening', 'defrost_cycle', 'sensor_spike', 'gradual_drift', 'sudden_failure'];
+        selectScenario(mapping[parseInt(e.key) - 1]);
+      }
+    });
+
+    // Page Init
+    window.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      renderTick(0);
+      initPythonEngineCheck();
+      loadBatchSample('refrigerant_leak');
+    });
+  </script>
+</body>
+</html>
